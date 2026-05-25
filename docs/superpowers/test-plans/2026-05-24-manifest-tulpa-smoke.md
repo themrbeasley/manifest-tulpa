@@ -2,8 +2,8 @@
 
 **Setup:**
 1. dnd5e world V13.351 / dnd5e 5.2.5.
-2. Required modules enabled: midi-qol, dae, times-up, sequencer, portal-lib, aura-effects ≥1.5.2.
-3. Recommended: jb2a_patreon, automated-animations.
+2. Required modules enabled: midi-qol, dae, times-up, sequencer, portal-lib, auraeffects ≥1.5.2.
+3. Recommended: jb2a_patreon, autoanimations.
 4. Install the module from a local build (Foundry → Setup → Install Module → Manifest URL → file path or local-network URL).
 5. Create or pick a PC at character level 9+ (so 5th-level slots exist).
 6. Drag the spell from the **Manifest Tulpa - Spells** compendium onto the PC.
@@ -45,7 +45,7 @@ For each pair below, cast → confirm → inspect the Tulpa:
 3. The NPC should immediately gain a marker AE that carries `flags["manifest-tulpa"].inHarrowingAura = true` and `auraDC` (numeric). **Inspect the AE on the NPC and verify both flags are present** — Aura Effects 1.5.2's applied-effect schema slot (`system.appliedEffect` vs. another key) was not verified outside Foundry; if the flags are missing on the NPC, the marker propagation needs to be re-wired in [modules/cast-flow.js](../../../modules/cast-flow.js) under "aura+marker" in `applyModifications`.
 4. Start a combat. On the NPC's turn-start, a Wis save roll posts to chat against your spell save DC.
 5. On failure: NPC gets `frightened` status; auto-clears at the start of its NEXT turn (times-up).
-6. Move the NPC out of range; marker AE disappears within the next aura-effects pulse.
+6. Move the NPC out of range; marker AE disappears within the next auraeffects pulse.
 
 ## Shared initiative (verifies Task 12)
 
@@ -80,7 +80,7 @@ For each, perform the action then verify the anchor AE, the Tulpa token, and a "
 ## Failure modes documented in the spec
 
 - `jb2a_patreon` absent → mechanics still work, no manifest/dismiss/Relentless visuals, one console warning per attempt.
-- `automated-animations` absent → strikes resolve mechanically, no strike animation.
+- `autoanimations` absent → strikes resolve mechanically, no strike animation.
 
 ## Sign-off
 

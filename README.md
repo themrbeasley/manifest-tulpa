@@ -18,11 +18,11 @@ https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.j
 - times-up
 - sequencer
 - portal-lib
-- aura-effects 1.5.2+
+- auraeffects 1.5.2+ ("Aura Effects" by mclemente)
 
 ## Recommended
 
-- automated-animations
+- autoanimations ("Automated Animations" by tposney)
 - jb2a_patreon
 
 ## Development

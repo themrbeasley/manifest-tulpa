@@ -37,7 +37,7 @@ These are decisions locked during brainstorming and gap-closure. Each has a non-
 
 ## Dependencies
 
-The module's `module.json` will declare these required: `dnd5e` 5.2.5+, `midi-qol`, `dae`, `times-up`, `sequencer`, `portal-lib` (the actual id of theripper93's "Portal" — **not** `portal`), `aura-effects` 1.5.2+. Recommended: `automated-animations`, `jb2a_patreon`. Section 1 of the spec is canonical.
+The module's `module.json` declares these required: `dnd5e` 5.2.5+, `midi-qol`, `dae`, `times-up`, `sequencer`, `portal-lib` (theripper93's "Portal" — **not** `portal`), `auraeffects` 1.5.2+ (mclemente's "Aura Effects" — **not** `aura-effects`). Recommended: `autoanimations` (tposney's "Automated Animations" — **not** `automated-animations`), `jb2a_patreon`. Section 1 of the spec used the wrong hyphenated IDs for the last two and shipped that way in v0.1.0 (fixed in v0.1.1); `module.json` is canonical, trust the live manifest over the spec on this.
 
 ## Build & release (planned — not yet wired)
 

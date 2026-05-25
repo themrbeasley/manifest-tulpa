@@ -24,6 +24,7 @@ The module is for personal use and ships as a single GitHub repository with two 
 |---|---|---|
 | 1 | 2026-05-24 | Initial approved design from brainstorming session. |
 | 2 | 2026-05-24 | Gap-closure pass. Highlights: cast flow moved from `preUseActivity` to `postUseActivity` (slot must be known); Multiattack switched from item-patch to item-insert (matches Foundry NPC convention); Harrowing Presence redesigned as Aura Effects marker + `dnd5e.combatTurnStart` hook (Aura Effects script is a sync predicate, not imperative); Unsettling Form narrowed to Wis/Cha grants flags (engine has no "saves vs frightened" tag); `times-up` declared required dep (drives duration-expiry dismissal); manual disposition step dropped (dnd5e auto-syncs); `portal` corrected to `portal-lib`; jb2a asset keys locked; psychic strike uses `pinkpurple` not `pink`; spell-asset scrub added. |
+| 3 | 2026-05-25 | Post-v0.1.0 correction. The spec's Section 1 dep table and Section 7 `module.json` example used `aura-effects` and `automated-animations` — those are the human-readable names. The actual Foundry module IDs are `auraeffects` (mclemente) and `autoanimations` (tposney). v0.1.0 shipped with the wrong IDs and Foundry flagged them as missing on install; v0.1.1 fixes `module.json`. Treat `module.json` (not this spec) as canonical for module IDs. |
 
 ---
 

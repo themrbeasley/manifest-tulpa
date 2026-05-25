@@ -4,9 +4,17 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-05-25
+
+### Fixed
+
+- **`module.json` required/recommended IDs.** v0.1.0 declared `aura-effects` and `automated-animations` — those are the human-readable names, not the Foundry module IDs. Foundry flagged both as missing on install even when the correct modules were present. Corrected to `auraeffects` (mclemente's "Aura Effects") and `autoanimations` (tposney's "Automated Animations").
+
 ## [0.1.0] — 2026-05-25
 
 Initial public release. Ships the full automation of the 5th-level Conjuration spell *Manifest Tulpa* for FoundryVTT V13 + dnd5e 5.2.5.
+
+> **Known issue (fixed in 0.1.1):** declared the wrong Foundry IDs for Aura Effects and Automated Animations, causing Foundry to flag them as missing dependencies even when installed.
 
 ### Added
 
@@ -45,12 +53,12 @@ Initial public release. Ships the full automation of the 5th-level Conjuration s
 - `times-up`
 - `sequencer`
 - `portal-lib` (theripper93's "Portal" — **not** `portal`)
-- `aura-effects` ≥ 1.5.2
+- `auraeffects` ≥ 1.5.2 ("Aura Effects" by mclemente)
 
 ### Recommended modules
 
 - `jb2a_patreon` — for full manifest / dismiss / Relentless visuals
-- `automated-animations` — for strike animations
+- `autoanimations` — for strike animations ("Automated Animations" by tposney)
 
 ### Known limitations
 
@@ -64,4 +72,5 @@ End-user manifest URL:
 https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.json
 ```
 
+[0.1.1]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.1
 [0.1.0]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.0
