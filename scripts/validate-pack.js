@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ACTOR_PATH = resolve(ROOT, "_source/manifest-tulpa-actors/Actor.tulpa.json");
@@ -65,7 +65,8 @@ export async function validateAll({ actorMutator, spellMutator } = {}) {
 }
 
 // CLI entry: when run directly, non-zero exit on failure.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// pathToFileURL normalizes separators correctly on Windows (backslash paths).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { ok, errors } = await validateAll();
   if (!ok) {
     console.error("Validation failed:");

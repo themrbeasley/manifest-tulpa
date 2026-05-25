@@ -42,7 +42,7 @@ For each pair below, cast → confirm → inspect the Tulpa:
 
 1. Cast with **Harrowing Presence** + **psychic**.
 2. Place a hostile NPC within 10ft of the Tulpa. Confirm the Aura Effects ring is visible (subtle magenta tint at 0.25 opacity).
-3. The NPC should immediately gain a "In Harrowing Presence" marker AE.
+3. The NPC should immediately gain a marker AE that carries `flags["manifest-tulpa"].inHarrowingAura = true` and `auraDC` (numeric). **Inspect the AE on the NPC and verify both flags are present** — Aura Effects 1.5.2's applied-effect schema slot (`system.appliedEffect` vs. another key) was not verified outside Foundry; if the flags are missing on the NPC, the marker propagation needs to be re-wired in [modules/cast-flow.js](../../../modules/cast-flow.js) under "aura+marker" in `applyModifications`.
 4. Start a combat. On the NPC's turn-start, a Wis save roll posts to chat against your spell save DC.
 5. On failure: NPC gets `frightened` status; auto-clears at the start of its NEXT turn (times-up).
 6. Move the NPC out of range; marker AE disappears within the next aura-effects pulse.

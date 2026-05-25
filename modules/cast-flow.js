@@ -3,6 +3,8 @@ import { MODULE_ID, NS, ANCHOR_AE_NAME, ANCHOR_DURATION_SECONDS } from "./consta
 import { openCastDialog } from "./cast-dialog.js";
 import { postCast, postWarning } from "./chat-cards.js";
 import { playManifest } from "./animations.js";
+import { armRelentlessWatcher } from "./relentless-watcher.js";
+import { alignTulpaInitiative } from "./initiative.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
 
@@ -12,8 +14,8 @@ const SPELL_IDENTIFIER = "manifest-tulpa";
  */
 export async function onPostUseActivity(activity, usageConfig, results) {
   if (activity?.type !== "summon") return;
-  if (activity.item?.system?.identifier !== SPELL_IDENTIFIER &&
-      activity.item?.name !== "Manifest Tulpa") return;
+  // The scrub script (scrub-source.mjs) sets system.identifier; localization-safe.
+  if (activity.item?.system?.identifier !== SPELL_IDENTIFIER) return;
 
   const caster = activity.item.actor;
   if (!caster) return;
@@ -27,8 +29,11 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   if (previous) await previous.delete();
 
   const selection = await openCastDialog({ availableSlots });
+  // From here on the Tulpa is on the canvas; any abort must clean it up to avoid orphans.
+  const token = locateSummonedTulpa(results, caster);
+
   if (!selection) {
-    await postWarning({ message: game.i18n.localize("MANIFEST_TULPA.Chat.CancelWarning") });
+    await abortAndCleanup(token, game.i18n.localize("MANIFEST_TULPA.Chat.CancelWarning"));
     return;
   }
 
@@ -37,12 +42,10 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   // Defensive slot-budget check (matches Section 4 step "Defensive: refuse if over").
   const used = selection.modifications.reduce((n, s) => n + (MODIFICATIONS[s]?.slots ?? 0), 0);
   if (used > availableSlots) {
-    await postWarning({ message: `castConfig over budget (${used}/${availableSlots}) — aborting.` });
+    await abortAndCleanup(token, `castConfig over budget (${used}/${availableSlots}) — aborting.`);
     return;
   }
 
-  // ---- Phase 3: apply mods to the just-summoned Tulpa ----
-  const token = locateSummonedTulpa(results, caster);
   if (!token) {
     await postWarning({ message: "Summon produced no token — check the spell's summon activity." });
     return;
@@ -60,13 +63,11 @@ export async function onPostUseActivity(activity, usageConfig, results) {
 
   // Step 5: Relentless watcher (registered by Task 13 module).
   if (castConfig.modifications.includes("relentless")) {
-    const { armRelentlessWatcher } = await import("./relentless-watcher.js");
     armRelentlessWatcher(tulpa.uuid, castConfig.damageType);
   }
 
   // Step 6: shared initiative.
   if (game.combat) {
-    const { alignTulpaInitiative } = await import("./initiative.js");
     await alignTulpaInitiative(game.combat, caster, tulpa);
   }
 
@@ -132,9 +133,15 @@ async function applyModifications(tulpa, caster, castConfig) {
   }
 
   // 4: aura+marker (Harrowing Presence).
+  // The aura is what Aura Effects propagates to in-range hostiles; the marker payload
+  // (inHarrowingAura flag + auraDC) is what the combat-turn hook reads. Merge marker flags
+  // onto the aura so propagated copies carry them. The exact applied-effect slot in
+  // Aura Effects 1.5.2 needs Foundry-side smoke verification — see smoke test step "Harrowing Presence".
   const auraMods = chosen.filter(x => x.kind === "aura+marker");
   for (const m of auraMods) {
-    const { aura } = m.build(caster, castConfig.damageType);
+    const { aura, markerOnApply } = m.build(caster, castConfig.damageType);
+    aura.flags = foundry.utils.mergeObject(aura.flags ?? {}, markerOnApply.flags ?? {});
+    if (aura.system) aura.system.appliedEffect = markerOnApply;
     await tulpa.createEmbeddedDocuments("ActiveEffect", [aura]);
   }
 
@@ -144,6 +151,14 @@ async function applyModifications(tulpa, caster, castConfig) {
       await m.postApply({ caster, tulpa, castConfig });
     }
   }
+}
+
+async function abortAndCleanup(token, message) {
+  if (token) {
+    try { await token.document.delete(); }
+    catch (err) { console.warn(`${MODULE_ID} | abort token cleanup failed:`, err); }
+  }
+  await postWarning({ message });
 }
 
 async function createAnchorAE(caster, tulpa, castConfig) {

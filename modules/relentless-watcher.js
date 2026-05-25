@@ -38,7 +38,7 @@ export async function restoreRelentlessWatchers() {
     if (!anchor) continue;
     const cfg = anchor.getFlag(MODULE_ID, "castConfig");
     if (!cfg?.modifications?.includes("relentless")) continue;
-    const tulpa = await fromUuid(cfg.tulpaUuid ?? anchor.getFlag(MODULE_ID, "tulpaUuid"));
+    const tulpa = await fromUuid(anchor.getFlag(MODULE_ID, "tulpaUuid"));
     if (!tulpa) continue;
     if (tulpa.getFlag?.(MODULE_ID, "relentlessUsed")) continue;
     armRelentlessWatcher(tulpa.uuid, cfg.damageType);

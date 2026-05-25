@@ -15,17 +15,21 @@ export async function onDeleteActiveEffect(effect /*, options, userId */) {
   const tulpa = await fromUuid(tulpaUuid);
 
   const reason = inferReason(effect);
+  const skipTokenTeardown = effect.getFlag?.(MODULE_ID, "skipTokenTeardown") === true;
 
   // Tear down in-memory watchers first.
   unarmRelentlessWatcher(tulpaUuid);
   endAuraEffect(tulpaUuid);
 
-  // If the token is still on the canvas, play the dismissal animation then delete it.
-  const token = tulpa?.getActiveTokens()[0];
-  if (token) {
-    if (castConfig.damageType) await playDismiss(token, castConfig.damageType);
-    try { await token.document.delete(); }
-    catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
+  // If trigger #5 fired, Foundry is already deleting the token — skip the second teardown
+  // (double-delete throws and the animation would render against a tearing-down token).
+  if (!skipTokenTeardown) {
+    const token = tulpa?.getActiveTokens()[0];
+    if (token) {
+      if (castConfig.damageType) await playDismiss(token, castConfig.damageType);
+      try { await token.document.delete(); }
+      catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
+    }
   }
 
   await postDismiss({ caster, tulpa, reason });
@@ -42,8 +46,12 @@ export async function onPreDeleteToken(tokenDoc) {
   if (!caster) return;
   const anchor = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid") === tokenDoc.actor.uuid);
   if (!anchor) return;
-  // Tag the anchor so the deleteActiveEffect handler reports the right reason.
-  await anchor.setFlag(MODULE_ID, "dismissReason", "manual");
+  // Tag the anchor: report the right reason AND tell the funnel not to re-delete the token
+  // (Foundry is already mid-tearing-down the token we were called about).
+  await anchor.update({
+    [`flags.${MODULE_ID}.dismissReason`]: "manual",
+    [`flags.${MODULE_ID}.skipTokenTeardown`]: true,
+  });
   await anchor.delete();
 }
 
