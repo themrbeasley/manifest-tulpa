@@ -1,7 +1,7 @@
 # Manifest Tulpa — FoundryVTT Module Design
 
 **Date:** 2026-05-24
-**Status:** Approved design (pending final user review before implementation)
+**Status:** Approved design — gap-closure pass complete (revision 2)
 **Target stack:** FoundryVTT V13.351, dnd5e 5.2.5
 **Distribution:** Personal use, GitHub Releases
 **Source of truth for the spell:** `manifest-tulpa.txt` at repo root
@@ -15,6 +15,15 @@ Manifest Tulpa is a custom 5th-level Conjuration spell. It summons a "Tulpa" —
 This document specifies a FoundryVTT module that fully automates the spell: the cast dialog (damage type + modification picker), the summon mechanics (via dnd5e's native `summon` activity + Portal placement), the in-combat behaviors (shared initiative, modification effects, Aura Effects-driven Harrowing Presence, Relentless intervention), the lifecycle (1-hour duration plus four other dismissal triggers), the visuals (Sequencer + Automated Animations with jb2a_patreon assets, fixed presets per damage type), and the GitHub-Actions-driven build/release pipeline.
 
 The module is for personal use and ships as a single GitHub repository with two compendium packs (one Item, one Actor) declared in its `module.json`.
+
+---
+
+## Revision history
+
+| Revision | Date | What changed |
+|---|---|---|
+| 1 | 2026-05-24 | Initial approved design from brainstorming session. |
+| 2 | 2026-05-24 | Gap-closure pass. Highlights: cast flow moved from `preUseActivity` to `postUseActivity` (slot must be known); Multiattack switched from item-patch to item-insert (matches Foundry NPC convention); Harrowing Presence redesigned as Aura Effects marker + `dnd5e.combatTurnStart` hook (Aura Effects script is a sync predicate, not imperative); Unsettling Form narrowed to Wis/Cha grants flags (engine has no "saves vs frightened" tag); `times-up` declared required dep (drives duration-expiry dismissal); manual disposition step dropped (dnd5e auto-syncs); `portal` corrected to `portal-lib`; jb2a asset keys locked; psychic strike uses `pinkpurple` not `pink`; spell-asset scrub added. |
 
 ---
 
@@ -36,10 +45,11 @@ The module is for personal use and ships as a single GitHub repository with two 
 | Module | Min. version | Why |
 |---|---|---|
 | `dnd5e` (system) | 5.2.5 | Native `summon` activity, Active Effects, item/activity model |
-| `midi-qol` | current | Attack/save workflow integration |
-| `dae` | current | AE duration, `specialDuration` triggers (`zeroHP`, `isDeath`), DAE flags on AEs |
+| `midi-qol` | current | Attack/save workflow integration; `grants.disadvantage.save.*` flags for Unsettling Form |
+| `dae` | current | AE `specialDuration` triggers (`zeroHP`, `isDeath`), DAE flags on AEs |
+| `times-up` | current | Deletes actor-parented non-transfer AEs when `duration.seconds` expires (drives dismissal trigger #1) |
 | `sequencer` | current | Programmatic animation chains for manifestation/dismissal |
-| `portal` | current | Token-placement targeting (replaces deprecated Warpgate) |
+| `portal-lib` | current | Token-placement targeting (the actual module id of "Portal" by theripper93; replaces deprecated Warpgate) |
 | `aura-effects` | 1.5.2+ | Harrowing Presence aura (replaces deprecated ActiveAuras) |
 
 ### Recommended modules
@@ -75,7 +85,7 @@ The caster-side Active Effect "Manifest Tulpa (active)" is the source of truth f
 
 ### The anchor AE — schema
 
-Created on the **caster** in Phase 3 step 5 of the cast flow.
+Created on the **caster** in Phase 3 step 4 of the cast flow.
 
 | Field | Value |
 |---|---|
@@ -106,55 +116,78 @@ The player sees this AE on their character sheet's Effects tab. Right-click → 
 
 ## Section 3 — Cast Flow
 
-### Phase 1 — Pre-cast: open the modification picker
+### Phase 1 — Post-use: open the modification picker
 
-Triggered by `dnd5e.preUseActivity` on the spell activity.
+Triggered by `dnd5e.postUseActivity(activity, usageConfig, results)` on the spell activity.
 
-1. Compute available slots: `2 + max(0, slotLevel - 5)`, capped at 6.
-2. Check whether the caster already has an active anchor AE. If yes, delete it first (this triggers full dismissal of the previous Tulpa per Section 5, trigger #4).
-3. Open `ManifestTulpaCastDialog` with:
+**Why postUseActivity, not preUseActivity:** `preUseActivity` fires *before* dnd5e's slot-selection dialog runs, so the chosen slot level isn't known yet. By the time `postUseActivity` fires, the player has picked their slot and `usageConfig.spell.slot` is populated (e.g. `"spell5"`, `"spell6"`). The tradeoff: the slot is *consumed* by the time our dialog opens. If the player cancels mod selection, the slot is gone. This is acceptable — the player can manually restore a slot via the sheet, and this design avoids fighting dnd5e's slot-selection flow (which historically causes weeks of debugging).
+
+1. **Read the chosen slot level** from `usageConfig.spell.slot` (string like `"spell5"`) — parse to an integer. If absent, fall back to `usageConfig.scaling` (numeric delta above base) + 5.
+2. **Compute available slots:** `2 + max(0, slotLevel - 5)`, capped at 6.
+3. **Check whether the caster already has an active anchor AE.** If yes, delete it first (this triggers full dismissal of the previous Tulpa per Section 5, trigger #4).
+4. **Open `ManifestTulpaCastDialog`** with:
    - Damage-type radio (force / radiant / psychic)
    - Modification picker grouped by category, enforcing slot cost and size-shift mutual exclusivity
    - Live "slots used / N" indicator
-4. On submit, stash selections on the activity:
+   - Cancel button that posts a chat warning reminding the player they may want to refund the spent slot
+5. **On submit**, stash selections on the activity:
    `activity.flags["manifest-tulpa"].castConfig = { damageType, modifications, slotLevel }`.
-5. On cancel, return `false` from the hook to abort the cast (dnd5e preserves the spell slot).
+   This flag is read by Phase 3 (which runs immediately after, in the same `postUseActivity` handler). dnd5e has already fired the summon as part of standard activity execution — the Tulpa token exists by this point — so we do not need to invoke it ourselves.
+6. **On cancel**, post `postWarning({ message: "Cast aborted after slot was spent — restore manually if intended." })` and abort by not summoning. The anchor AE is never created, so no Tulpa appears.
 
-### Phase 2 — Summon: let dnd5e place the actor
+### Phase 2 — Summon: let dnd5e place the actor (happens *before* Phase 1's dialog)
 
-The spell uses dnd5e 5.x's native `summon` activity pointing at the Tulpa actor in the compendium. dnd5e handles:
+The spell uses dnd5e 5.x's native `summon` activity pointing at the Tulpa actor in the compendium. dnd5e handles this as part of standard activity execution — it runs *between* the slot dialog and the `postUseActivity` hook, so by the time Phase 1's modification dialog opens, the Tulpa token already exists on the canvas with base statblock and friendly disposition.
+
+dnd5e handles:
 
 - Token placement (via Portal)
 - Summoner linkage (`flags.dnd5e.summon.origin = caster.uuid`)
+- Disposition sync to caster (dnd5e auto-aligns at placement — see [dnd5e.mjs:27986-27988](file://C:/Users/jorda/AppData/Local/FoundryVTT/Data/systems/dnd5e/dnd5e.mjs#L27986-L27988))
 - Any built-in summon-stat scaling defined on the activity
 
 The module does not override this phase. The actor template just has to be configured correctly upstream.
 
-### Phase 3 — Post-summon: wire up the Tulpa
+**Visual UX note:** the player will see the Tulpa appear with bare base stats, then the mod dialog opens, then mods apply as a visible AE/item update. This brief "bare → dressed" flicker is acceptable and gives the player a chance to see the unmodified baseline.
 
-Triggered by `dnd5e.postSummon`.
+### Phase 3 — Apply modifications to the (already-summoned) Tulpa
 
-1. **Read `castConfig`** from the originating activity's flags.
+Runs immediately after Phase 1's dialog submit (inside the `postUseActivity` handler that opened the dialog).
+
+1. **Locate the Tulpa token** that was just summoned in Phase 2. Use `results.createdTokens` from the `postUseActivity` payload, or fall back to the most recently created token whose `flags.dnd5e.summon.origin === caster.uuid`.
 2. **Set damage type** on the Manifestation Strike weapon item: rewrite its damage entry from the placeholder to the chosen type.
-3. **Set token disposition** to friendly: `token.document.update({ disposition: 1 })`.
-4. **Construct modifications** — for each slug in `castConfig.modifications`, look it up in `modules/modification-registry.js` and apply its payload (three kinds — see Section 4). Apply order:
+3. **Construct modifications** — for each slug in `castConfig.modifications`, look it up in `modules/modification-registry.js` and apply its payload (four kinds — see Section 4). Apply order:
    1. Item patches first (so the strike is in its final shape when AEs reference it).
-   2. AE-only mods second (single batched `tulpa.createEmbeddedDocuments("ActiveEffect", [...])`).
-   3. Aura Effects mod last.
-   4. After all primary payloads are applied, run each chosen mod's optional `postApply({ caster, tulpa, castConfig })` hook (used by `telepathicLink`, available for future cross-cutting mods).
-5. **Apply the caster-side anchor AE** (the schema in Section 2). Its `deleteActiveEffect` hook fires the dismissal flow.
-6. **Register the Relentless watcher** if `relentless` was selected (Section 7, item 2).
-7. **Shared initiative**: if combat is active, `combat.setInitiative(tulpaCombatant.id, casterInitiative - 0.01)`.
-8. **Animation**: trigger `playManifest(token, damageType)` (Section 6).
+   2. Item inserts second (any feat items the mod adds, e.g. Multiattack).
+   3. AE-only mods third (single batched `tulpa.createEmbeddedDocuments("ActiveEffect", [...])`).
+   4. Aura Effects mod last.
+   5. After all primary payloads are applied, run each chosen mod's optional `postApply({ caster, tulpa, castConfig })` hook (used by `telepathicLink`, available for future cross-cutting mods).
+4. **Apply the caster-side anchor AE** (the schema in Section 2). Its `deleteActiveEffect` hook fires the dismissal flow.
+5. **Register the Relentless watcher** if `relentless` was selected (Section 7, item 2).
+6. **Shared initiative**: if combat is active, `combat.setInitiative(tulpaCombatant.id, casterInitiative - 0.01)`.
+7. **Animation**: trigger `playManifest(token, damageType)` (Section 6).
+8. **Cast confirmation card**: `postCast({ caster, tulpa, castConfig })`.
 
-### Actor-template scrub (one-time, before pack build)
+### Compendium asset scrub (one-time, before pack build)
 
-The existing `fvtt-Actor-tulpa-rfi8EPvTDFduYlW5.json` needs cleanup before going into the compendium pack:
+Both shipped compendium documents are derived from the existing world exports and need cleanup before going into the LevelDB packs.
+
+**Actor scrub** — `fvtt-Actor-tulpa-rfi8EPvTDFduYlW5.json` → `_source/manifest-tulpa-actors/Actor.tulpa.json`:
 
 - Delete all ~30 modification AEs from `effects[]`.
 - Delete all modification items from `items[]` (keep only Manifestation Strike + base-statblock items).
 - Remove `flags.ActiveAuras` from the soon-to-be-deleted Harrowing Presence item (moot once that item is gone, but for completeness).
 - Reset Manifestation Strike's damage type to the placeholder.
+- Strip world-export flags: `flags["activity-macro"]`, `flags["LocknKey"]`, `flags["scene-packer"]`, `flags.exportSource`.
+- Strip `_stats.lastModifiedBy`, `_stats.createdTime`, `_stats.modifiedTime`, `_stats.compendiumSource`, `_stats.duplicateSource`.
+
+**Spell scrub** — `fvtt-Item-manifest-tulpa-YwUNZpFtX3dwNQPx.json` → `_source/manifest-tulpa-spells/Item.manifest-tulpa.json`:
+
+- Strip the same world-export flags as above (`activity-macro`, `LocknKey`, `scene-packer`, `exportSource`).
+- Strip `_stats` provenance fields as above.
+- Fill `system.description.value` with the spell text from `manifest-tulpa.txt` (currently empty).
+- Confirm the summon activity's profile UUID points at the *packed* actor UUID, not the world-local UUID. The summon activity must reference `Compendium.manifest-tulpa.manifest-tulpa-actors.Actor.<id>`.
+- Verify `consumption.scaling.allowed: false` (confirmed — we read slot from `usageConfig.spell.slot` directly).
 
 The existing AE configs (changes arrays, modes, durations) are not lost — they get translated into JS object literals inside `modules/modification-registry.js`. One mechanical port, then maintained in one place.
 
@@ -182,8 +215,8 @@ export const MODIFICATIONS = {
   sizeShift_gargantuan: { category: "morphic", slots: 3, kind: "ae",     template: {...},
                           mutuallyExclusive: "sizeShift" },
   empoweredStrikes: { category: "combat",  slots: 1, kind: "item-patch", patch: (strike) => ({...}) },
-  multiattack:      { category: "combat",  slots: 1, kind: "item-patch", patch: (strike) => ({...}) },
-  harrowingPresence:{ category: "combat",  slots: 1, kind: "aura",       build: (caster) => ({...}) },
+  multiattack:      { category: "combat",  slots: 1, kind: "item-insert", item: {...} },
+  harrowingPresence:{ category: "combat",  slots: 1, kind: "aura+marker", build: (caster) => ({ aura: {...}, markerOnApply: {...} }) },
   relentless:       { category: "combat",  slots: 1, kind: "ae",         template: {...} },
   // resistance_* (10 entries — one per damage type)
   // flySpeed, swimSpeed, spiderClimb, tremorsense
@@ -196,8 +229,12 @@ Each entry has:
 
 - `category` — for the dialog grouping.
 - `slots` — cost in modification slots.
-- `kind` — `"ae"` | `"item-patch"` | `"aura"`.
-- Payload matching the kind — `template` (AE config object) | `patch` (function returning item-update object) | `build` (function returning the Aura Effects AE config; takes `caster` so it can bake spell save DC).
+- `kind` — `"ae"` | `"item-patch"` | `"item-insert"` | `"aura+marker"`.
+- Payload matching the kind:
+  - `template` (AE config object) — for `kind: "ae"`
+  - `patch` (function returning an item-update object applied to an existing item, e.g., the strike) — for `kind: "item-patch"`
+  - `item` (full item document object, inserted as a new item on the Tulpa) — for `kind: "item-insert"`
+  - `build` (function returning `{ aura, markerOnApply }`; takes `caster` so it can bake spell save DC) — for `kind: "aura+marker"`. The aura AE applies the marker to in-range hostiles; the marker carries the DC flag forward to be read by the combat-turn hook.
 - Optional `mutuallyExclusive` group key — used only by size shifts.
 - Optional `postApply({ caster, tulpa, castConfig })` — side-effects hook fired after the primary payload is applied. Used by mods whose behavior reaches beyond the Tulpa (e.g. `telepathicLink` sets a caster-side flag and posts a chat card).
 
@@ -207,11 +244,11 @@ Each entry has:
 |---|---|---|
 | `reinforcedForm` | ae | AE change: `system.attributes.ac.flat`, mode 2 ADD, value `2` |
 | `vitalSurge` | ae | AE changes: `system.attributes.hp.max` +30 AND `system.attributes.hp.value` +30 (mode 2 ADD), so applying mid-fight heals as well as expands |
-| `unsettlingForm` | ae | midi-qol flag granting Disadvantage on saves against the Frightened condition from this source (`flags.midi-qol.disadvantage.ability.save.frightened` or equivalent — confirm exact key at implementation) |
+| `unsettlingForm` | ae | Two midi-qol grants flags on the Tulpa: `flags.midi-qol.grants.disadvantage.save.wis: 1` and `flags.midi-qol.grants.disadvantage.save.cha: 1`. **Note:** narrower than RAW. The spell text says creatures have Disadvantage on saves *against the Frightened condition*, but there's no clean engine hook for "saves whose purpose is to resist frightened." The Wis/Cha narrowing covers the common case (Fear, Frightening Strikes, Cause Fear, Harrowing Presence itself) since fear saves are almost always Wis-based, occasionally Cha. Documented as a known-but-accepted scope reduction. |
 | `sizeShift_*` | ae | AE change: `system.traits.size`, mode 5 OVERRIDE. Mutually exclusive group: `sizeShift`. Plus token resize via `token.document.update({width, height})` at apply time (V13 token size doesn't auto-sync from size-trait AE alone) |
 | `empoweredStrikes` | item-patch | Add `1d8` of the cast's damage type to the strike's damage parts |
-| `multiattack` | item-patch | Set the strike's attack activity to `attacks: 2` |
-| `harrowingPresence` | aura | Aura Effects AE: `type: "auraeffects.aura"`, `system.distanceFormula: "10"`, `system.disposition: -1`, `system.applyToSelf: false`, `system.showRadius: true`, `system.color: PRESETS[damageType].auraTint`, `system.opacity: 0.25`. Caster's spell save DC baked into `flags["manifest-tulpa"].auraDC`. The Aura Effects `system.script` runs at start of affected creatures' turns: rolls Wis save vs. the flag DC, applies `frightened` status on failure (1 round) |
+| `multiattack` | item-insert | Inserts a "Multiattack" feat item on the Tulpa with description text: "The Tulpa makes two Manifestation Strike attacks when it takes the Attack action." No mechanical enforcement — player clicks Manifestation Strike twice. Foundry doesn't count or restrict attacks per turn, so this matches standard 5e NPC multiattack convention. |
+| `harrowingPresence` | aura+marker | **Two-stage mechanism.** Stage 1: an Aura Effects AE on the Tulpa (`type: "auraeffects.aura"`, `system.distanceFormula: "10"`, `system.disposition: -1`, `system.applyToSelf: false`, `system.showRadius: true`, `system.color: PRESETS[damageType].auraTint`, `system.opacity: 0.25`, `system.script: "true"`). The aura applies a marker AE to each hostile creature in range. Stage 2: the marker AE carries `flags["manifest-tulpa"].inHarrowingAura: true` and `flags["manifest-tulpa"].auraDC: <caster's spell save DC>` with no mechanical changes. A global `dnd5e.combatTurnStart` hook (registered in `init.js`) checks if the starting combatant has the marker flag; if yes, rolls a Wis save vs. the carried DC and applies the standard `frightened` status with `flags.dae.specialDuration: ["turnStart"]` on failure. Aura Effects removes the marker automatically when the creature leaves range. **Why this design:** Aura Effects 1.5.2's `system.script` is compiled as a synchronous boolean predicate (`new Function("actor","token","sourceToken","rollData","return Boolean(${script});")` — see `auraeffects/scripts/helpers.mjs:88`); it cannot `await`, roll, or apply effects. The marker pattern moves the imperative work to a hook that runs in the right context. |
 | `relentless` | ae | Sheet-visible marker AE on the Tulpa (no system changes). The `preUpdateActor` watcher (Section 7) is what enforces the mechanic; the AE just makes it visible to players that Relentless is armed. The Tulpa's `flags["manifest-tulpa"].relentlessUsed` flag (set when the watcher fires) is the one-shot guard, not anything on this AE. |
 | `resistance_*` (10) | ae | AE change: `system.traits.dr.value`, mode 2 ADD, value `[damageType]` |
 | `flySpeed` / `swimSpeed` | ae | AE change: `system.attributes.movement.fly` (or `.swim`), mode 4 UPGRADE, value `@attributes.movement.walk` (formula resolves at evaluation; stays in sync if walk later changes) |
@@ -224,7 +261,7 @@ Each entry has:
 
 Enforced in two places:
 - **UI**: the cast dialog prevents over-selection and size-shift double-pick at the form level.
-- **Defensive**: Phase 3 step 4 refuses to apply if `sum(slots) > availableSlots` — guards against malformed `castConfig` from any source.
+- **Defensive**: Phase 3 step 3 (modification construction) refuses to apply if `sum(slots) > availableSlots` — guards against malformed `castConfig` from any source.
 
 ---
 
@@ -236,7 +273,7 @@ All five triggers funnel through a single path: **delete the caster-side anchor 
 
 | # | Trigger | Mechanism |
 |---|---|---|
-| 1 | 1-hour duration expires | Anchor AE has `duration.seconds = 3600`. Default Foundry expiry only flips the AE to `disabled: true` — it does NOT delete it — so an unguarded `deleteActiveEffect` listener would miss this trigger. Fix: register a small `updateActiveEffect` shim in `init.js` that watches for `disabled` flipping false→true on an anchor AE and calls `anchor.delete()`. That delete then re-enters the normal `deleteActiveEffect` flow, preserving the single funnel. (DAE's `flags.dae.specialDuration: ["expiry"]` or `deleteWhenExpired` may obviate this — confirm at implementation against the installed DAE version. The shim is the safe baseline either way.) |
+| 1 | 1-hour duration expires | Anchor AE has `duration.seconds = 3600`. The `times-up` module deletes actor-parented non-transfer AEs when their `duration.seconds` runs out — the anchor AE qualifies (it's parented to the caster actor, and is created at runtime so it's not a transfer effect from an item). The delete fires the standard `deleteActiveEffect` flow. `times-up` is declared as a required dependency for this reason. |
 | 2 | Caster drops to 0 HP | Anchor AE has `flags.dae.specialDuration: ["zeroHP", "isDeath"]`. DAE handles natively. |
 | 3 | Caster dies | Same as above (`"isDeath"`). |
 | 4 | Caster re-casts Manifest Tulpa | Phase 1 step 2 of cast flow detects an existing anchor and deletes it before opening the dialog. |
@@ -266,9 +303,10 @@ Foundry has two kinds of "memory":
 
 What survives reload automatically:
 - The anchor AE on the caster (persistent doc).
-- The 1-hour duration (Foundry tracks game-world time).
+- The 1-hour duration (Foundry tracks game-world time; `times-up` re-evaluates expiry on world load).
 - `zeroHP` / `isDeath` triggers (DAE reads from the AE on every update).
-- The two global hooks (`deleteActiveEffect`, `preDeleteToken`) — re-registered at `ready`.
+- The three global hooks (`deleteActiveEffect`, `preDeleteToken`, `dnd5e.combatTurnStart` for Harrowing Presence) — re-registered at `ready`.
+- Harrowing Presence marker AEs on in-range hostiles — Aura Effects re-applies them on token initialization.
 
 What silently breaks without intervention:
 - The Relentless watcher — an in-memory `preUpdateActor` hook tied to a specific Tulpa's UUID, created just-in-time at cast.
@@ -311,9 +349,17 @@ Each `manifest` / `dismiss` entry holds: jb2a asset key, scale, fade-in/out, opt
 
 Color families locked here:
 
-- **Force** → purple/violet (jb2a `purple` variants)
-- **Radiant** → gold/yellow (jb2a `yellow` variants)
-- **Psychic** → magenta/pink (jb2a `pink` / `dark_purple` variants)
+- **Force** → purple/violet (jb2a `purple` variants — circles, impacts, strikes)
+- **Radiant** → gold/yellow (jb2a `yellow` variants — circles, impacts, strikes)
+- **Psychic** → magenta/pink (jb2a `pink` for circles/impacts; **`pinkpurple` for unarmed strikes** — jb2a's strike library doesn't have a plain `pink` variant)
+
+Locked dotted DB keys (from research against installed jb2a_patreon):
+
+| Damage type | Manifest/dismiss circle | Strike (Automated Animations target) | Impact flash |
+|---|---|---|---|
+| Force | `jb2a.magic_signs.circle.02.conjuration.intro.purple` / `.outro.purple` | `jb2a.unarmed_strike.magical.purple` | `jb2a.impact.010.purple` |
+| Radiant | `jb2a.magic_signs.circle.02.conjuration.intro.yellow` / `.outro.yellow` | `jb2a.unarmed_strike.magical.yellow` | `jb2a.impact.010.yellow` |
+| Psychic | `jb2a.magic_signs.circle.02.conjuration.intro.pink` / `.outro.pink` | `jb2a.unarmed_strike.magical.pinkpurple` | `jb2a.impact.010.pink` |
 
 ### Driver module
 
@@ -355,8 +401,9 @@ When the Relentless watcher triggers (Section 7), play a brief ward-style effect
 | `jb2a_patreon` | optional dep | Skip manifest/dismiss/Relentless visuals. Console warning. Mechanics still work. |
 | `sequencer` | required dep | `module.json` won't load without it; user sees Foundry's standard missing-dep prompt. |
 | `automated-animations` | optional dep | Strikes resolve mechanically, no strike animation. |
-| `portal` | required dep | Same as Sequencer — declared required. |
+| `portal-lib` | required dep | Same as Sequencer — declared required. |
 | `aura-effects` | required dep | Same — Harrowing Presence depends on it. |
+| `times-up` | required dep | Same — duration-based dismissal trigger #1 depends on it. |
 
 All animation calls are wrapped in try/catch so a missing asset key or runtime hiccup never blocks the underlying mechanical step.
 
@@ -366,7 +413,7 @@ All animation calls are wrapped in try/catch so a missing asset key or runtime h
 
 ### 1. Shared initiative
 
-- **If combat is active at cast time** (Phase 3 step 7): dnd5e's summon activity adds the Tulpa to the combat tracker; module sets the Tulpa combatant's `initiative` to `casterCombatant.initiative - 0.01`.
+- **If combat is active at cast time** (Phase 3 step 6): dnd5e's summon activity adds the Tulpa to the combat tracker; module sets the Tulpa combatant's `initiative` to `casterCombatant.initiative - 0.01`.
 - **If combat starts *after* the cast**: a `combatStart` hook walks the combatants, finds any summoned Tulpas whose summoner is also in this combat, and sets each Tulpa combatant's `initiative` to its summoner combatant's `initiative - 0.01` after dnd5e's initial roll.
 - **Idempotent**: the hook always re-aligns. If combat ends and re-starts mid-cast, it just runs again.
 
@@ -374,7 +421,7 @@ All animation calls are wrapped in try/catch so a missing asset key or runtime h
 
 ### 2. Relentless watcher
 
-When `relentless` is in `castConfig.modifications`, Phase 3 step 6 registers a `preUpdateActor` hook scoped to the Tulpa's UUID.
+When `relentless` is in `castConfig.modifications`, Phase 3 step 5 registers a `preUpdateActor` hook scoped to the Tulpa's UUID.
 
 1. Filters: only fires when `actor.uuid === tulpaUuid`.
 2. If the update would set HP ≤ 0 AND `tulpa.flags["manifest-tulpa"].relentlessUsed !== true`:
@@ -393,7 +440,7 @@ Session reload: re-registered by the startup scan described in Section 5.
 
 When `telepathicLink` is in `castConfig.modifications`:
 
-- Phase 3 step 4 creates a marker AE on the Tulpa with no system changes.
+- Phase 3 step 3 creates a marker AE on the Tulpa with no system changes.
 - Sets `flags["manifest-tulpa"].telepathicLink = true` on both caster and Tulpa.
 - Posts a one-time chat card.
 
@@ -401,8 +448,8 @@ That's the full v1 implementation. Actual telepathic communication is roleplay. 
 
 ### 4. Prototype-token adjustments
 
-- **Disposition** (Phase 3 step 3): `token.document.update({ disposition: 1 })`. Template default is -1 so the same actor could be used as an enemy in other contexts; the module flips it for the player's summon.
-- **Size** (Phase 3 step 4, only if a size-shift mod is chosen): the registry's size-shift entries do *both* an AE on `system.traits.size` AND a `token.document.update({ width, height })` call. V13 doesn't reliably auto-resize tokens from a size-trait AE alone.
+- **Disposition**: dnd5e auto-syncs the summoned token's disposition to the caster at placement ([dnd5e.mjs:27986-27988](file://C:/Users/jorda/AppData/Local/FoundryVTT/Data/systems/dnd5e/dnd5e.mjs#L27986-L27988)). No module action needed. (Earlier revisions of this design called for a manual `token.document.update({ disposition: 1 })` step; that's redundant and has been dropped.)
+- **Size** (Phase 3 step 3, only if a size-shift mod is chosen): the registry's size-shift entries do *both* an AE on `system.traits.size` AND a `token.document.update({ width, height })` call. V13 doesn't reliably auto-resize tokens from a size-trait AE alone.
 
   | Size | width × height |
   |---|---|
@@ -433,7 +480,30 @@ Centralized in `modules/chat-cards.js`. Five named helpers:
 
 All cards use `ChatMessage.getSpeaker` keyed off the relevant actor so they appear in the right voice.
 
-### 7. Flag namespace map (canonical reference)
+### 7. Harrowing Presence combat-turn hook
+
+Registered globally in `init.js` (lives across all combats, all worlds; no per-Tulpa scoping needed):
+
+```js
+Hooks.on("dnd5e.combatTurnStart", async (actor, combat, combatant) => {
+  const marker = actor.effects.find(e => e.flags["manifest-tulpa"]?.inHarrowingAura);
+  if (!marker) return;
+  const dc = marker.flags["manifest-tulpa"].auraDC;
+  const roll = await actor.rollSavingThrow({ ability: "wis", target: dc });
+  if (roll.total < dc) {
+    await actor.toggleStatusEffect("frightened", { active: true });
+    // Apply with specialDuration: ["turnStart"] so it expires automatically
+    // at the start of the actor's *next* turn (per spell text)
+  }
+});
+```
+
+Notes:
+- The marker AE is applied by Aura Effects when the creature enters the 10ft aura, removed when it leaves. Carries `flags["manifest-tulpa"].auraDC` (the caster's spell save DC, baked into the source aura at apply time).
+- The check is broad — any actor whose effects include the marker — so it works across multiple Tulpas in the same combat, with different DCs per Tulpa.
+- `frightened` expiry: applied with `flags.dae.specialDuration: ["turnStart"]` so DAE/times-up auto-removes it at the start of the affected creature's next turn (matching "until the start of its next turn").
+
+### 8. Flag namespace map (canonical reference)
 
 All flags under `flags["manifest-tulpa"]` unless noted:
 
@@ -444,16 +514,20 @@ All flags under `flags["manifest-tulpa"]` unless noted:
 | Caster (actor) | `telepathicLink` | True while link mod is active |
 | Tulpa (actor) | `relentlessUsed` | True after Relentless fires; prevents re-trigger |
 | Tulpa (actor) | `telepathicLink` | Mirror of caster's flag |
-| Tulpa's Harrowing Presence aura AE | `auraDC` | Caster's spell save DC, baked at apply time |
+| Tulpa's Harrowing Presence aura AE | `auraDC` | Caster's spell save DC, baked at apply time. Propagates to marker AEs Aura Effects creates on in-range hostiles. |
+| Marker AE on aura-affected hostile | `inHarrowingAura` | True; used by `dnd5e.combatTurnStart` hook to detect affected creatures |
+| Marker AE on aura-affected hostile | `auraDC` | Propagated from source aura — the DC the hook rolls against |
 | Activity (transient, during cast) | `castConfig` | Passes selections from Phase 1 dialog to Phase 3 |
 
 Outside our namespace, but the module reads/writes:
 
 - `flags.dae.specialDuration: ["zeroHP", "isDeath"]` on the anchor AE.
+- `flags.dae.specialDuration: ["turnStart"]` on the frightened AE applied by the Harrowing Presence hook.
 - `flags.dae.showIcon: false` on the anchor AE.
 - `flags.dnd5e.summon.origin` on the Tulpa (set by dnd5e's summon activity).
+- `flags.midi-qol.grants.disadvantage.save.wis` / `.cha` on the Tulpa when `unsettlingForm` is selected.
 
-### 8. Things this design does not need
+### 9. Things this design does not need
 
 - No sheet filter macro / no `renderNPCActorSheet` hook.
 - No `modEnabled` flag convention.
@@ -486,6 +560,7 @@ manifest-tulpa/
 │   ├── animation-presets.js          # PRESETS map
 │   ├── chat-cards.js                 # 5 named card helpers
 │   ├── relentless-watcher.js         # register/unregister/restore
+│   ├── harrowing-presence-hook.js    # dnd5e.combatTurnStart handler — rolls Wis save + applies frightened
 │   └── initiative.js                 # shared-initiative hook
 ├── styles/manifest-tulpa.css         # cast dialog styling
 ├── lang/en.json                      # i18n strings
@@ -528,8 +603,9 @@ manifest-tulpa/
     "requires": [
       { "id": "midi-qol",     "type": "module" },
       { "id": "dae",          "type": "module" },
+      { "id": "times-up",     "type": "module" },
       { "id": "sequencer",    "type": "module" },
-      { "id": "portal",       "type": "module" },
+      { "id": "portal-lib",   "type": "module" },
       { "id": "aura-effects", "type": "module",
         "compatibility": { "minimum": "1.5.2" } }
     ],
@@ -574,14 +650,22 @@ End users install by pasting the manifest URL into Foundry's "Install Module" di
 
 ### Pre-release validation script
 
-`scripts/validate-pack.js` loads `_source/manifest-tulpa-actors/Actor.tulpa.json` and asserts:
+`scripts/validate-pack.js` loads both source JSON files and asserts:
 
+**Actor (`_source/manifest-tulpa-actors/Actor.tulpa.json`):**
 - `effects` is empty (no leftover modification AEs).
 - `items` contains exactly the base-statblock items + Manifestation Strike — nothing else.
 - `flags.ActiveAuras` is not present anywhere in the document tree.
+- World-export flags absent: `flags["activity-macro"]`, `flags["LocknKey"]`, `flags["scene-packer"]`, `flags.exportSource`.
 - Manifestation Strike's damage type is the placeholder, not `force` / `radiant` / `psychic`.
 
-Fails the release if any assertion fails. Cheap insurance against the "I forgot to scrub the actor file" foot-gun.
+**Spell (`_source/manifest-tulpa-spells/Item.manifest-tulpa.json`):**
+- World-export flags absent (same list as actor).
+- `system.description.value` is non-empty.
+- The summon activity's profile UUID matches the `Compendium.manifest-tulpa.manifest-tulpa-actors.Actor.*` pattern (not a world-local UUID).
+- `consumption.scaling.allowed` is `false`.
+
+Fails the release if any assertion fails. Cheap insurance against the "I forgot to scrub the asset files" foot-gun.
 
 ### Versioning policy
 
@@ -612,6 +696,7 @@ Always points at the latest release. Paste into Foundry → install. No marketpl
 | `modules/animations.js` + `animation-presets.js` | All Sequencer + AA orchestration |
 | `modules/chat-cards.js` | All chat output |
 | `modules/relentless-watcher.js` | Hook scoping + reload-time re-arm |
+| `modules/harrowing-presence-hook.js` | `dnd5e.combatTurnStart` handler — detects marker AE, rolls save, applies frightened |
 | `modules/initiative.js` | Shared-initiative hook |
 | `_source/.../Item.manifest-tulpa.json` | The spell |
 | `_source/.../Actor.tulpa.json` | The base-statblock Tulpa |
@@ -624,19 +709,29 @@ Always points at the latest release. Paste into Foundry → install. No marketpl
 
 Documented here so they're not lost. None block v1; all are candidates for follow-up.
 
+### Deferred (acknowledged, not implemented in v1)
+
 1. **Caster delay/ready does not re-shift Tulpa initiative.** Tulpa stays at its original position. GM can manually re-order. (Section 7, item 1.)
 2. **Non-damage unconscious does not dismiss the Tulpa.** Sleep, Hold Person, etc. on the caster don't fire trigger #2. Can be added by hooking `applyActiveEffect` for the `unconscious` status. (Section 5.)
 3. **`/tulpa <message>` chat-whisper command.** Telepathic Link is a marker AE in v1; future enhancement to wire up a whisper command using the flag already set.
-4. **No localization beyond `lang/en.json`.** Strings are externalized in v1 to make future localization mechanical, but only English is shipped.
-5. **Unsettling Form's exact midi-qol flag key** needs to be confirmed against the installed midi-qol version at implementation time. (Section 4 table note.)
-6. **Aura Effects script for Harrowing Presence** — the exact API for rolling a save inside `system.script` and applying `frightened` from `system.stashedStatuses` should be confirmed against the Aura Effects 1.5.2 source at implementation. (Section 4 table.)
-7. **jb2a_patreon asset keys** in `PRESETS` need to be confirmed against the installed library version. (Section 6.)
-8. **DAE's exact "delete-on-expire" flag name** needs confirming at implementation. The `updateActiveEffect` shim is the baseline that works regardless, but if DAE auto-deletes natively we can drop the shim. (Section 5, trigger #1.)
+4. **No localization beyond `lang/en.json`.** Strings are externalized in v1 to make future localization mechanical, but only English is shipped (confirmed scope).
+
+### Narrowed-from-RAW (engine limits)
+
+5. **Unsettling Form is narrower than RAW.** Spell text says creatures have Disadvantage on saves *against the Frightened condition*; module grants Disadvantage on Wis and Cha saves on the Tulpa (`flags.midi-qol.grants.disadvantage.save.wis` and `.cha`). Fear saves are almost always Wis-based, occasionally Cha, so this covers the common case. A frightened-target-tag system would close the gap fully but doesn't exist in midi-qol today. (Section 4 table.)
+6. **Multiattack is descriptive, not enforced.** The Multiattack modification inserts a feature item describing "two Manifestation Strike attacks when the Tulpa takes the Attack action," but Foundry doesn't count or restrict attacks per turn; the player clicks Manifestation Strike twice. This matches standard 5e NPC multiattack convention in Foundry. (Section 4 table.)
+
+### Resolved during gap-closure pass (no follow-up needed)
+
+- ~~D5: Unsettling Form midi-qol flag key~~ — confirmed `grants.disadvantage.save.wis`/`.cha` (see narrowed-from-RAW above)
+- ~~D6: Aura Effects script API for Harrowing Presence~~ — script is a sync predicate; redesigned as marker AE + `dnd5e.combatTurnStart` hook (Section 4 + Section 7 item 7)
+- ~~D7: jb2a_patreon asset keys~~ — locked dotted DB keys per damage type (Section 6 table)
+- ~~D8: DAE delete-on-expire flag name~~ — handled by `times-up` module (declared required dependency); no shim needed
 
 ---
 
 ## Next steps
 
-1. User reviews this spec.
-2. Any revisions are folded in.
-3. Transition to the `writing-plans` skill to produce a detailed implementation plan that maps these design sections to concrete, verifiable build steps.
+1. User reviews this revised spec (revision 2 — gap-closure pass complete).
+2. Any further revisions folded in.
+3. **Hold here pending explicit user instruction to proceed.** Per the user's directive at the end of the gap-closure pass: do *not* automatically transition to the `writing-plans` skill. The user will direct next steps when ready.
