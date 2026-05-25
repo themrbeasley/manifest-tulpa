@@ -1,0 +1,94 @@
+{
+  "name": "Harrowing Presence",
+  "img": "systems/dnd5e/icons/svg/items/feature.svg",
+  "type": "auraeffects.aura",
+  "system": {
+    "showRadius": false,
+    "applyToSelf": true,
+    "bestFormula": "",
+    "canStack": false,
+    "collisionTypes": [
+      "move"
+    ],
+    "color": null,
+    "combatOnly": false,
+    "disableOnHidden": true,
+    "distanceFormula": "0",
+    "disposition": 0,
+    "evaluatePreApply": false,
+    "opacity": 0.25,
+    "overrideName": "",
+    "script": "",
+    "stashedChanges": [],
+    "stashedStatuses": []
+  },
+  "changes": [],
+  "disabled": false,
+  "duration": {
+    "startTime": null,
+    "combat": null,
+    "seconds": null,
+    "rounds": null,
+    "turns": null,
+    "startRound": null,
+    "startTurn": null
+  },
+  "description": "",
+  "tint": "#ffffff",
+  "transfer": true,
+  "statuses": [],
+  "flags": {
+    "dnd5e": {
+      "riders": {
+        "statuses": []
+      }
+    },
+    "dae": {
+      "disableCondition": "",
+      "stackable": "noneName",
+      "showIcon": false,
+      "disableIncapacitated": false,
+      "durationExpression": "",
+      "macroRepeat": "none",
+      "specialDuration": []
+    },
+    "core": {
+      "overlay": false
+    },
+    "ActiveAuras": {
+      "isAura": false,
+      "aura": "All",
+      "nameOverride": "",
+      "radius": "",
+      "alignment": "",
+      "type": "",
+      "customCheck": "",
+      "ignoreSelf": false,
+      "height": false,
+      "hidden": false,
+      "displayTemp": false,
+      "hostile": false,
+      "onlyOnce": false,
+      "wallsBlock": "system",
+      "statuses": []
+    },
+    "auraeffects": {
+      "originalType": "base"
+    },
+    "exportSource": {
+      "world": "ahvantir",
+      "system": "dnd5e",
+      "coreVersion": "13.351",
+      "systemVersion": "5.2.5"
+    }
+  },
+  "_stats": {
+    "coreVersion": "13.351",
+    "systemId": "dnd5e",
+    "systemVersion": "5.2.5",
+    "createdTime": 1779667077235,
+    "modifiedTime": 1779667077235,
+    "lastModifiedBy": "38vFJLJd6i8T8NCJ"
+  },
+  "origin": null
+}

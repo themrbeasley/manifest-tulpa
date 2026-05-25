@@ -1,0 +1,3310 @@
+{
+  "name": "Tulpa",
+  "type": "npc",
+  "img": "systems/dnd5e/icons/svg/actors/npc.svg",
+  "system": {
+    "currency": {
+      "pp": 0,
+      "gp": 0,
+      "ep": 0,
+      "sp": 0,
+      "cp": 0
+    },
+    "abilities": {
+      "str": {
+        "value": 16,
+        "proficient": 1,
+        "max": null,
+        "bonuses": {
+          "check": "",
+          "save": ""
+        },
+        "check": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        },
+        "save": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        }
+      },
+      "dex": {
+        "value": 14,
+        "proficient": 0,
+        "max": null,
+        "bonuses": {
+          "check": "",
+          "save": ""
+        },
+        "check": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        },
+        "save": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        }
+      },
+      "con": {
+        "value": 16,
+        "proficient": 1,
+        "max": null,
+        "bonuses": {
+          "check": "",
+          "save": ""
+        },
+        "check": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        },
+        "save": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        }
+      },
+      "int": {
+        "value": 10,
+        "proficient": 0,
+        "max": null,
+        "bonuses": {
+          "check": "",
+          "save": ""
+        },
+        "check": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        },
+        "save": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        }
+      },
+      "wis": {
+        "value": 12,
+        "proficient": 0,
+        "max": null,
+        "bonuses": {
+          "check": "",
+          "save": ""
+        },
+        "check": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        },
+        "save": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        }
+      },
+      "cha": {
+        "value": 8,
+        "proficient": 0,
+        "max": null,
+        "bonuses": {
+          "check": "",
+          "save": ""
+        },
+        "check": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        },
+        "save": {
+          "roll": {
+            "min": null,
+            "max": null,
+            "mode": 0
+          }
+        }
+      }
+    },
+    "bonuses": {
+      "mwak": {
+        "attack": "",
+        "damage": ""
+      },
+      "rwak": {
+        "attack": "",
+        "damage": ""
+      },
+      "msak": {
+        "attack": "",
+        "damage": ""
+      },
+      "rsak": {
+        "attack": "",
+        "damage": ""
+      },
+      "abilities": {
+        "check": "",
+        "save": "",
+        "skill": ""
+      },
+      "spell": {
+        "dc": ""
+      }
+    },
+    "skills": {
+      "acr": {
+        "ability": "dex",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "ani": {
+        "ability": "wis",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "arc": {
+        "ability": "int",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "ath": {
+        "ability": "str",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "dec": {
+        "ability": "cha",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "his": {
+        "ability": "int",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "ins": {
+        "ability": "wis",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "itm": {
+        "ability": "cha",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "inv": {
+        "ability": "int",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "med": {
+        "ability": "wis",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "nat": {
+        "ability": "int",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "prc": {
+        "ability": "wis",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 1,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "prf": {
+        "ability": "cha",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "per": {
+        "ability": "cha",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "rel": {
+        "ability": "int",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "slt": {
+        "ability": "dex",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "ste": {
+        "ability": "dex",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      },
+      "sur": {
+        "ability": "wis",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "value": 0,
+        "bonuses": {
+          "check": "",
+          "passive": ""
+        }
+      }
+    },
+    "tools": {},
+    "spells": {
+      "spell1": {
+        "value": 0
+      },
+      "spell2": {
+        "value": 0
+      },
+      "spell3": {
+        "value": 0
+      },
+      "spell4": {
+        "value": 0
+      },
+      "spell5": {
+        "value": 0
+      },
+      "spell6": {
+        "value": 0
+      },
+      "spell7": {
+        "value": 0
+      },
+      "spell8": {
+        "value": 0
+      },
+      "spell9": {
+        "value": 0
+      },
+      "pact": {
+        "value": 0
+      }
+    },
+    "attributes": {
+      "ac": {
+        "calc": "flat",
+        "flat": 13
+      },
+      "init": {
+        "ability": "",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "bonus": ""
+      },
+      "movement": {
+        "units": null,
+        "hover": false,
+        "ignoredDifficultTerrain": [],
+        "walk": "30"
+      },
+      "attunement": {
+        "max": 3
+      },
+      "senses": {
+        "darkvision": 60,
+        "blindsight": null,
+        "tremorsense": null,
+        "truesight": null,
+        "units": null,
+        "special": ""
+      },
+      "spellcasting": "",
+      "exhaustion": 0,
+      "concentration": {
+        "ability": "",
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "bonuses": {
+          "save": ""
+        },
+        "limit": 1
+      },
+      "loyalty": {},
+      "hd": {
+        "spent": 0
+      },
+      "hp": {
+        "max": 40,
+        "temp": null,
+        "tempmax": null,
+        "value": 40,
+        "formula": ""
+      },
+      "death": {
+        "roll": {
+          "min": null,
+          "max": null,
+          "mode": 0
+        },
+        "success": 0,
+        "failure": 0,
+        "bonuses": {
+          "save": ""
+        }
+      },
+      "price": {
+        "value": null,
+        "denomination": "gp"
+      },
+      "spell": {
+        "level": 0
+      }
+    },
+    "details": {
+      "biography": {
+        "value": "",
+        "public": ""
+      },
+      "alignment": "",
+      "ideal": "",
+      "bond": "",
+      "flaw": "",
+      "race": null,
+      "type": {
+        "value": "construct",
+        "subtype": ""
+      },
+      "habitat": {
+        "value": [],
+        "custom": ""
+      },
+      "cr": 1,
+      "treasure": {
+        "value": []
+      }
+    },
+    "resources": {
+      "legact": {
+        "max": 0,
+        "spent": 0
+      },
+      "legres": {
+        "max": 0,
+        "spent": 0
+      },
+      "lair": {
+        "value": false,
+        "initiative": null,
+        "inside": false
+      }
+    },
+    "source": {
+      "revision": 1,
+      "rules": "2024"
+    },
+    "traits": {
+      "size": "med",
+      "di": {
+        "value": [
+          "poison",
+          "psychic"
+        ],
+        "custom": "",
+        "bypasses": []
+      },
+      "dr": {
+        "value": [],
+        "custom": "",
+        "bypasses": []
+      },
+      "dv": {
+        "value": [],
+        "custom": "",
+        "bypasses": []
+      },
+      "dm": {
+        "amount": {},
+        "bypasses": []
+      },
+      "ci": {
+        "value": [
+          "charmed",
+          "exhaustion",
+          "frightened",
+          "poisoned"
+        ],
+        "custom": ""
+      },
+      "languages": {
+        "value": [],
+        "custom": "",
+        "communication": {}
+      },
+      "important": false
+    }
+  },
+  "prototypeToken": {
+    "name": "Tulpa",
+    "displayName": 40,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "texture": {
+      "src": "systems/dnd5e/icons/svg/actors/npc.svg",
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "offsetX": 0,
+      "offsetY": 0,
+      "fit": "contain",
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "tint": "#ffffff",
+      "alphaThreshold": 0.75
+    },
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "attributes.hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "light": {
+      "negative": false,
+      "priority": 0,
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "dim": 0,
+      "attenuation": 0.5,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "type": null,
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    "sight": {
+      "enabled": true,
+      "range": 0,
+      "angle": 360,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "brightness": 0,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "occludable": {
+      "radius": 0
+    },
+    "ring": {
+      "enabled": false,
+      "colors": {
+        "ring": null,
+        "background": null
+      },
+      "effects": 1,
+      "subject": {
+        "scale": 1,
+        "texture": null
+      }
+    },
+    "turnMarker": {
+      "mode": 2,
+      "animation": null,
+      "src": "modules/jb2a_patreon/Library/Generic/Marker/EnergyStrands_01_Regular_Blue_600x600.webm",
+      "disposition": true
+    },
+    "movementAction": null,
+    "flags": {},
+    "randomImg": false,
+    "appendNumber": false,
+    "prependAdjective": false
+  },
+  "items": [
+    {
+      "name": "Manifestation Strike",
+      "type": "weapon",
+      "system": {
+        "description": {
+          "value": "<p>The Tulpa lashes out with a manifestation of its caster's will. The damage type is chosen when the spell is cast.</p>",
+          "chat": ""
+        },
+        "equipped": true,
+        "type": {
+          "value": "natural",
+          "baseItem": ""
+        },
+        "activities": {
+          "PSbQj5zgBufnIbGe": {
+            "type": "attack",
+            "name": "Manifestation Strike (Melee)",
+            "attack": {
+              "ability": "spellcasting",
+              "type": {
+                "value": "melee",
+                "classification": "spell"
+              },
+              "flat": false,
+              "bonus": "",
+              "critical": {}
+            },
+            "damage": {
+              "includeBase": false,
+              "parts": [
+                {
+                  "number": 2,
+                  "denomination": 8,
+                  "bonus": "@mod",
+                  "types": [
+                    "bludgeoning"
+                  ],
+                  "custom": {
+                    "enabled": false
+                  },
+                  "scaling": {
+                    "number": 1
+                  }
+                }
+              ],
+              "critical": {}
+            },
+            "range": {
+              "value": "5",
+              "units": "ft",
+              "override": true
+            },
+            "_id": "PSbQj5zgBufnIbGe",
+            "sort": 0,
+            "activation": {
+              "type": "action",
+              "override": false
+            },
+            "consumption": {
+              "scaling": {
+                "allowed": false
+              },
+              "spellSlot": true,
+              "targets": []
+            },
+            "description": {},
+            "duration": {
+              "units": "inst",
+              "concentration": false,
+              "override": false
+            },
+            "effects": [],
+            "flags": {},
+            "target": {
+              "template": {
+                "contiguous": false,
+                "units": "ft"
+              },
+              "affects": {
+                "choice": false
+              },
+              "override": false,
+              "prompt": true
+            },
+            "uses": {
+              "spent": 0,
+              "recovery": []
+            },
+            "visibility": {
+              "level": {},
+              "requireAttunement": false,
+              "requireIdentification": false,
+              "requireMagic": false
+            },
+            "useConditionText": "",
+            "useConditionReason": "",
+            "effectConditionText": "",
+            "macroData": {
+              "name": "",
+              "command": ""
+            },
+            "ignoreTraits": {
+              "idi": false,
+              "idr": false,
+              "idv": false,
+              "ida": false,
+              "idm": false
+            },
+            "midiProperties": {
+              "ignoreTraits": [],
+              "triggeredActivityId": "none",
+              "triggeredActivityConditionText": "",
+              "triggeredActivityTargets": "targets",
+              "triggeredActivityRollAs": "self",
+              "triggeredActivityConsume": true,
+              "triggeredActivityConfigure": true,
+              "autoConsume": false,
+              "forceConsumeDialog": "default",
+              "forceRollDialog": "default",
+              "forceDamageDialog": "default",
+              "confirmTargets": "default",
+              "autoTargetType": "any",
+              "autoTargetAction": "default",
+              "automationOnly": false,
+              "otherActivityCompatible": true,
+              "otherActivityAsParentType": true,
+              "identifier": "",
+              "displayActivityName": false,
+              "rollMode": "default",
+              "chooseEffects": false,
+              "toggleEffect": false,
+              "ignoreFullCover": false,
+              "removeChatButtons": "default",
+              "magicEffect": false,
+              "magicDamage": false,
+              "noConcentrationCheck": false,
+              "skipConcentrationCheck": false,
+              "autoCEEffects": "default"
+            },
+            "isOverTimeFlag": false,
+            "overTimeProperties": {
+              "saveRemoves": true,
+              "rollAs": "target",
+              "preRemoveConditionText": "",
+              "postRemoveConditionText": ""
+            },
+            "otherActivityId": "none",
+            "otherActivityAsParentType": true,
+            "attackMode": "oneHanded",
+            "ammunition": "",
+            "otherActivityUuid": "",
+            "attackRollPerTarget": "default",
+            "fumbleThreshold": 1
+          },
+          "iU9a3BJNP8aDILcr": {
+            "type": "attack",
+            "name": "Manifestation Strike (Ranged)",
+            "attack": {
+              "ability": "spellcasting",
+              "type": {
+                "value": "ranged",
+                "classification": "spell"
+              },
+              "flat": false,
+              "bonus": "",
+              "critical": {}
+            },
+            "damage": {
+              "includeBase": false,
+              "parts": [
+                {
+                  "number": 2,
+                  "denomination": 8,
+                  "bonus": "@mod",
+                  "types": [
+                    "bludgeoning"
+                  ],
+                  "custom": {
+                    "enabled": false
+                  },
+                  "scaling": {
+                    "number": 1
+                  }
+                }
+              ],
+              "critical": {}
+            },
+            "range": {
+              "value": "30",
+              "units": "ft",
+              "override": true
+            },
+            "_id": "iU9a3BJNP8aDILcr",
+            "sort": 0,
+            "activation": {
+              "type": "action",
+              "override": false
+            },
+            "consumption": {
+              "scaling": {
+                "allowed": false
+              },
+              "spellSlot": true,
+              "targets": []
+            },
+            "description": {},
+            "duration": {
+              "units": "inst",
+              "concentration": false,
+              "override": false
+            },
+            "effects": [],
+            "flags": {},
+            "target": {
+              "template": {
+                "contiguous": false,
+                "units": "ft"
+              },
+              "affects": {
+                "choice": false
+              },
+              "override": false,
+              "prompt": true
+            },
+            "uses": {
+              "spent": 0,
+              "recovery": []
+            },
+            "visibility": {
+              "level": {},
+              "requireAttunement": false,
+              "requireIdentification": false,
+              "requireMagic": false
+            },
+            "useConditionText": "",
+            "useConditionReason": "",
+            "effectConditionText": "",
+            "macroData": {
+              "name": "",
+              "command": ""
+            },
+            "ignoreTraits": {
+              "idi": false,
+              "idr": false,
+              "idv": false,
+              "ida": false,
+              "idm": false
+            },
+            "midiProperties": {
+              "ignoreTraits": [],
+              "triggeredActivityId": "none",
+              "triggeredActivityConditionText": "",
+              "triggeredActivityTargets": "targets",
+              "triggeredActivityRollAs": "self",
+              "triggeredActivityConsume": true,
+              "triggeredActivityConfigure": true,
+              "autoConsume": false,
+              "forceConsumeDialog": "default",
+              "forceRollDialog": "default",
+              "forceDamageDialog": "default",
+              "confirmTargets": "default",
+              "autoTargetType": "any",
+              "autoTargetAction": "default",
+              "automationOnly": false,
+              "otherActivityCompatible": true,
+              "otherActivityAsParentType": true,
+              "identifier": "",
+              "displayActivityName": false,
+              "rollMode": "default",
+              "chooseEffects": false,
+              "toggleEffect": false,
+              "ignoreFullCover": false,
+              "removeChatButtons": "default",
+              "magicEffect": false,
+              "magicDamage": false,
+              "noConcentrationCheck": false,
+              "skipConcentrationCheck": false,
+              "autoCEEffects": "default"
+            },
+            "isOverTimeFlag": false,
+            "overTimeProperties": {
+              "saveRemoves": true,
+              "rollAs": "target",
+              "preRemoveConditionText": "",
+              "postRemoveConditionText": ""
+            },
+            "otherActivityId": "none",
+            "otherActivityAsParentType": true,
+            "attackMode": "oneHanded",
+            "ammunition": "",
+            "otherActivityUuid": "",
+            "attackRollPerTarget": "default",
+            "fumbleThreshold": 1
+          }
+        },
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "identifier": "manifestation-strike",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "identified": true,
+        "unidentified": {
+          "description": ""
+        },
+        "container": null,
+        "quantity": 1,
+        "weight": {
+          "value": 0,
+          "units": "lb"
+        },
+        "price": {
+          "value": 0,
+          "denomination": "gp"
+        },
+        "rarity": "",
+        "attunement": "",
+        "attuned": false,
+        "crew": {
+          "value": []
+        },
+        "ammunition": {},
+        "armor": {},
+        "damage": {
+          "base": {
+            "types": [],
+            "custom": {
+              "enabled": false
+            },
+            "scaling": {
+              "number": 1
+            }
+          },
+          "versatile": {
+            "types": [],
+            "custom": {
+              "enabled": false
+            },
+            "scaling": {
+              "number": 1
+            }
+          }
+        },
+        "properties": [],
+        "proficient": null,
+        "range": {
+          "units": "ft"
+        }
+      },
+      "_id": "E2otJ30orXNIeyUb",
+      "img": "systems/dnd5e/icons/svg/items/weapon.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "flags": {
+        "scene-packer": {
+          "hash": "58127ef4aecfd3e8d6b62e2be9c3725ca5e25bea"
+        },
+        "dnd5e": {
+          "riders": {
+            "activity": []
+          }
+        }
+      },
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489728720,
+        "modifiedTime": 1779489896513,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    },
+    {
+      "name": "Tether",
+      "type": "feat",
+      "system": {
+        "description": {
+          "value": "<p><strong>Tether.</strong> If the Tulpa ends its turn more than 100 feet from its caster, it dissipates and the spell ends.</p>",
+          "chat": ""
+        },
+        "type": {
+          "value": "monster",
+          "subtype": ""
+        },
+        "activities": {},
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "advancement": [],
+        "identifier": "tether",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "crewed": false,
+        "enchant": {},
+        "prerequisites": {
+          "items": [],
+          "repeatable": false
+        },
+        "properties": [],
+        "requirements": ""
+      },
+      "_id": "nCNU6p9qeEbwlOYH",
+      "img": "systems/dnd5e/icons/svg/items/feature.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "flags": {
+        "scene-packer": {
+          "hash": "7ea5e3d754ea2869d4b7d39deb31cca70711fc31"
+        }
+      },
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489921846,
+        "modifiedTime": 1779489921846,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    },
+    {
+      "name": "Multiattack",
+      "type": "feat",
+      "system": {
+        "description": {
+          "value": "<p><strong>Multiattack (Modification).</strong> The Tulpa makes two Manifestation Strike attacks.</p>",
+          "chat": ""
+        },
+        "type": {
+          "value": "monster",
+          "subtype": ""
+        },
+        "activities": {},
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "advancement": [],
+        "identifier": "multiattack",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "crewed": false,
+        "enchant": {},
+        "prerequisites": {
+          "items": [],
+          "repeatable": false
+        },
+        "properties": [],
+        "requirements": ""
+      },
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "multiattack",
+          "modEnabled": false
+        },
+        "scene-packer": {
+          "hash": "174826c19e2877b7ca5cbc00f7181331b6db756a"
+        }
+      },
+      "_id": "w7Ll8StFYbMNU6N4",
+      "img": "systems/dnd5e/icons/svg/items/feature.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489979920,
+        "modifiedTime": 1779489979920,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    },
+    {
+      "name": "Harrowing Presence",
+      "type": "feat",
+      "system": {
+        "description": {
+          "value": "<p><strong>Harrowing Presence (Modification).</strong> When a creature starts its turn within 10 feet of the Tulpa, it must make a Wisdom saving throw against the caster's spell save DC or have the Frightened condition until the start of its next turn.</p>",
+          "chat": ""
+        },
+        "type": {
+          "value": "monster",
+          "subtype": ""
+        },
+        "activities": {},
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "advancement": [],
+        "identifier": "harrowing-presence",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "crewed": false,
+        "enchant": {},
+        "prerequisites": {
+          "items": [],
+          "repeatable": false
+        },
+        "properties": [],
+        "requirements": ""
+      },
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "harrowing-presence",
+          "modEnabled": false
+        },
+        "ActiveAuras": {
+          "isAura": true,
+          "aura": "Enemies",
+          "radius": 10,
+          "alignment": "",
+          "type": "",
+          "ignoreSelf": true,
+          "height": false,
+          "hidden": false,
+          "hostile": true,
+          "onlyOnce": false,
+          "displayTemp": false,
+          "time": "startTurn",
+          "save": "wis",
+          "savedc": null
+        },
+        "scene-packer": {
+          "hash": "d00665fe49b8853637a740b380509594a3ae7e79"
+        },
+        "dnd5e": {
+          "riders": {
+            "activity": []
+          }
+        }
+      },
+      "_id": "9EqvjORGp0u7ys5l",
+      "img": "systems/dnd5e/icons/svg/items/feature.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489979920,
+        "modifiedTime": 1779492587450,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    },
+    {
+      "name": "Relentless",
+      "type": "feat",
+      "system": {
+        "description": {
+          "value": "<p><strong>Relentless (Modification).</strong> The first time the Tulpa would be reduced to 0 hit points, it instead drops to 1 hit point. Once the Tulpa has used this trait, it can't use it again.</p>",
+          "chat": ""
+        },
+        "type": {
+          "value": "monster",
+          "subtype": ""
+        },
+        "activities": {},
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "advancement": [],
+        "identifier": "relentless",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "crewed": false,
+        "enchant": {},
+        "prerequisites": {
+          "items": [],
+          "repeatable": false
+        },
+        "properties": [],
+        "requirements": ""
+      },
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "relentless",
+          "modEnabled": false,
+          "used": false
+        },
+        "dae": {
+          "itemMacro": true
+        },
+        "scene-packer": {
+          "hash": "6dd92a5bc7b4354baaf3c2f31f21cc43a722853e"
+        }
+      },
+      "_id": "8x6yU0TvGfguedsU",
+      "img": "systems/dnd5e/icons/svg/items/feature.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489979920,
+        "modifiedTime": 1779489979920,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    },
+    {
+      "name": "Unsettling Form",
+      "type": "feat",
+      "system": {
+        "description": {
+          "value": "<p><strong>Unsettling Form (Modification).</strong> The Tulpa's form is partially incorporeal. It can move through objects and other creatures as if they were difficult terrain. It takes 5 force damage if it ends its turn inside an object.</p>",
+          "chat": ""
+        },
+        "type": {
+          "value": "monster",
+          "subtype": ""
+        },
+        "activities": {},
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "advancement": [],
+        "identifier": "unsettling-form",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "crewed": false,
+        "enchant": {},
+        "prerequisites": {
+          "items": [],
+          "repeatable": false
+        },
+        "properties": [],
+        "requirements": ""
+      },
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "unsettling-form",
+          "modEnabled": false
+        },
+        "scene-packer": {
+          "hash": "91c5b5bb55165599644d288dab3036c829f2b6e6"
+        }
+      },
+      "_id": "R1qEOWCudlKlMQ37",
+      "img": "systems/dnd5e/icons/svg/items/feature.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489979920,
+        "modifiedTime": 1779489979920,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    },
+    {
+      "name": "Telepathic Link",
+      "type": "feat",
+      "system": {
+        "description": {
+          "value": "<p><strong>Telepathic Link (Modification).</strong> The caster can communicate telepathically with the Tulpa as long as they are both on the same plane of existence. The Tulpa can respond with simple impressions and intentions.</p>",
+          "chat": ""
+        },
+        "type": {
+          "value": "monster",
+          "subtype": ""
+        },
+        "activities": {},
+        "uses": {
+          "spent": 0,
+          "recovery": []
+        },
+        "advancement": [],
+        "identifier": "telepathic-link",
+        "source": {
+          "revision": 1,
+          "rules": "2024"
+        },
+        "crewed": false,
+        "enchant": {},
+        "prerequisites": {
+          "items": [],
+          "repeatable": false
+        },
+        "properties": [],
+        "requirements": ""
+      },
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "telepathic-link",
+          "modEnabled": false
+        },
+        "scene-packer": {
+          "hash": "21b0016e19e0161749af7846be545ba5214b78c4"
+        }
+      },
+      "_id": "QssmSN3XLRA60L41",
+      "img": "systems/dnd5e/icons/svg/items/feature.svg",
+      "effects": [],
+      "folder": null,
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489979920,
+        "modifiedTime": 1779489979920,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      },
+      "ownership": {
+        "default": 0
+      }
+    }
+  ],
+  "effects": [
+    {
+      "name": "Size Shift: Large",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.size",
+          "mode": 5,
+          "value": "lg",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "size-large"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "PmFVgoDpQjM9fuaw",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Size Shift: Small",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.size",
+          "mode": 5,
+          "value": "sm",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "size-small"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "0LAT3yKIDYmoLkq7",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Size Shift: Tiny",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.size",
+          "mode": 5,
+          "value": "tiny",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "size-tiny"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "tpQ7mDkaZKnXxw3s",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Size Shift: Huge",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.size",
+          "mode": 5,
+          "value": "huge",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "size-huge"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "LuguCwGbhfNSelmX",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Size Shift: Gargantuan",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.size",
+          "mode": 5,
+          "value": "grg",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "size-grg"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "VKr4gnhHa3HzvaAN",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Reinforced Form",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.attributes.ac.bonus",
+          "mode": 2,
+          "value": "2",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "reinforced-form"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "0lO6jLCyvOW8AQJ2",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Vital Surge",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.attributes.hp.bonuses.overall",
+          "mode": 2,
+          "value": "30",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "vital-surge"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "7oxTsOBpNgJ5gk5O",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Acid",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "acid",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-acid"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "Pdk99ngr1hmxrX19",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Fire",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "fire",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-fire"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "wC7vgGQ2GfimTx6p",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Cold",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "cold",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-cold"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "6jxZqn3xnJKxEFnz",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Lightning",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "lightning",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-lightning"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "FLUYKW539J1I2kyD",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Necrotic",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "necrotic",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-necrotic"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "593sdgPs9QtDrRtL",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Radiant",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "radiant",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-radiant"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "26VhidiuJT4wYpnZ",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Thunder",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "thunder",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-thunder"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "6uk8JTCMWImJYWqK",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Bludgeoning",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "bludgeoning",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-bludgeoning"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "OQKMmsgr6XF6jeyB",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Piercing",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "piercing",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-piercing"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "hiaSzIErjDXbW17C",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Damage Resistance: Slashing",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.traits.dr.value",
+          "mode": 2,
+          "value": "slashing",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "resistance-slashing"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "Mq8cZuWqSbNpvyt3",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Empowered Strikes",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.bonuses.msak.damage",
+          "mode": 2,
+          "value": "1d8",
+          "priority": 20
+        },
+        {
+          "key": "system.bonuses.rsak.damage",
+          "mode": 2,
+          "value": "1d8",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "empowered-strikes"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "X4kZeGT151L4aasd",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Fly Speed",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.attributes.movement.fly",
+          "mode": 4,
+          "value": "@attributes.movement.walk",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "fly-speed"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "J7PvE0138oRLfWSo",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Swim Speed",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.attributes.movement.swim",
+          "mode": 4,
+          "value": "@attributes.movement.walk",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "swim-speed"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "DaIrMjQ4vPPFwzYl",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Spider Climb",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.attributes.movement.climb",
+          "mode": 4,
+          "value": "@attributes.movement.walk",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "spider-climb"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "8KNFjVdMx9YTYmwF",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Tremorsense",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.attributes.senses.tremorsense",
+          "mode": 4,
+          "value": "30",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "tremorsense"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "wUNcvbqz1fFGq7cN",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: ACR",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.acr.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-acr"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "z8Bzw3E0snlpH5dE",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: ANI",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.ani.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-ani"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "Srqj7HuntOzjgb1C",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: ARC",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.arc.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-arc"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "FHJ55GCCun0dSwRz",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: ATH",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.ath.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-ath"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "e4d7VGF7OZmCUTr2",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: DEC",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.dec.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-dec"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "jQig931yz1t74KGa",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: HIS",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.his.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-his"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "2szBYGiGQEhPdHBM",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: INS",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.ins.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-ins"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "kB8dL13TyZaLj1uh",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: ITM",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.itm.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-itm"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "TScIki0GE2NaKwwh",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: INV",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.inv.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-inv"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "Y2aRFHOB3rdlH1xg",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: MED",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.med.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-med"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "YVK7FoBQDGoBdFVG",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: NAT",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.nat.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-nat"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "QZzY8dI8wjD8tkt9",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: PRC",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.prc.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-prc"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "JSSIu7juQK91QtsA",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: PRF",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.prf.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-prf"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "xw7E7nxJxz6xpDZQ",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: PER",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.per.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-per"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "gagf0bfFiTuW3ym4",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: REL",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.rel.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-rel"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "KNgTm0ZDLfGkFWsA",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: SLT",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.slt.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-slt"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "HJEekD9MCR4EJzvV",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: STE",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.ste.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-ste"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "nBBWTNIk9gVmLvkv",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    },
+    {
+      "name": "Skill Affinity: SUR",
+      "disabled": true,
+      "changes": [
+        {
+          "key": "system.skills.sur.value",
+          "mode": 4,
+          "value": "1",
+          "priority": 20
+        }
+      ],
+      "flags": {
+        "manifest-tulpa": {
+          "modification": "skill-sur"
+        },
+        "dae": {
+          "specialDuration": []
+        }
+      },
+      "_id": "I68TU9YYDQniEvV3",
+      "img": null,
+      "type": "base",
+      "system": {},
+      "duration": {
+        "startTime": 14625256596,
+        "combat": null
+      },
+      "description": "",
+      "origin": null,
+      "tint": "#ffffff",
+      "transfer": false,
+      "statuses": [],
+      "sort": 0,
+      "_stats": {
+        "compendiumSource": null,
+        "duplicateSource": null,
+        "exportSource": null,
+        "coreVersion": "13.351",
+        "systemId": "dnd5e",
+        "systemVersion": "5.2.5",
+        "createdTime": 1779489957951,
+        "modifiedTime": 1779489957951,
+        "lastModifiedBy": "88iczu26M8zBVFjr"
+      }
+    }
+  ],
+  "folder": null,
+  "flags": {
+    "scene-packer": {
+      "hash": "cd9d64e46ce765b707168a4abd9c25dd650b9b5f",
+      "sourceId": "Actor.rfi8EPvTDFduYlW5"
+    },
+    "sc-setforge": {
+      "activeTierKeys": []
+    }
+  },
+  "_stats": {
+    "compendiumSource": null,
+    "duplicateSource": null,
+    "exportSource": {
+      "worldId": "ahvantir",
+      "uuid": "Actor.rfi8EPvTDFduYlW5",
+      "coreVersion": "13.351",
+      "systemId": "dnd5e",
+      "systemVersion": "5.2.5"
+    },
+    "coreVersion": "13.351",
+    "systemId": "dnd5e",
+    "systemVersion": "5.2.5",
+    "createdTime": 1779489462647,
+    "modifiedTime": 1779489647379,
+    "lastModifiedBy": "88iczu26M8zBVFjr"
+  },
+  "ownership": {
+    "default": 0
+  }
+}

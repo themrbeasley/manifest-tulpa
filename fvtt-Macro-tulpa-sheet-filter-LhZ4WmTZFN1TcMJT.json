@@ -1,0 +1,41 @@
+{
+  "name": "Tulpa - Sheet Filter",
+  "type": "script",
+  "author": "88iczu26M8zBVFjr",
+  "img": "icons/svg/dice-target.svg",
+  "scope": "global",
+  "command": "// Hides unselected modification items from the Tulpa sheet.\n// Run once per session (or on world load). Safe to re-run.\n\nconst HOOK_FLAG = \"tulpaSheetFilterHookId\";\n\n// Remove any previously registered copy first\nif (window[HOOK_FLAG]) {\n  Hooks.off(\"renderNPCActorSheet\", window[HOOK_FLAG]);\n}\n\nwindow[HOOK_FLAG] = Hooks.on(\"renderNPCActorSheet\", (app, html, _context) => {\n  const actor = app.document ?? app.actor;\n  if (!actor?.flags?.[\"manifest-tulpa\"]) return; // Not a Tulpa actor\n\n  // html is an Element in ApplicationV2 (V13), fall back for V1\n  const root = html instanceof Element ? html : html[0];\n  if (!root) return;\n\n  for (const el of root.querySelectorAll(\"[data-item-id]\")) {\n    const item = actor.items.get(el.dataset.itemId);\n    if (!item) continue;\n\n    const flags = item.flags?.[\"manifest-tulpa\"] ?? {};\n    // Hide if it's a mod-tracked item and not yet enabled\n    if (\"modEnabled\" in flags && flags.modEnabled !== true) {\n      el.style.display = \"none\";\n    }\n  }\n});\n\nui.notifications.info(\"Tulpa sheet filter active.\");",
+  "folder": null,
+  "flags": {
+    "scene-packer": {
+      "hash": "6d3baa22c102900750cd0f20455fbdf7af1d78b7",
+      "sourceId": "Macro.LhZ4WmTZFN1TcMJT"
+    },
+    "advanced-macros": {
+      "runForSpecificUser": ""
+    },
+    "macro-wheel": {
+      "activeCondition": ""
+    }
+  },
+  "_stats": {
+    "compendiumSource": null,
+    "duplicateSource": null,
+    "exportSource": {
+      "worldId": "ahvantir",
+      "uuid": "Macro.LhZ4WmTZFN1TcMJT",
+      "coreVersion": "13.351",
+      "systemId": "dnd5e",
+      "systemVersion": "5.2.5"
+    },
+    "coreVersion": "13.351",
+    "systemId": "dnd5e",
+    "systemVersion": "5.2.5",
+    "createdTime": 1779493434561,
+    "modifiedTime": 1779493449532,
+    "lastModifiedBy": "88iczu26M8zBVFjr"
+  },
+  "ownership": {
+    "default": 0
+  }
+}

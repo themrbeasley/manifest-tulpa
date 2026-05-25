@@ -1,0 +1,41 @@
+{
+  "name": "Tulpa - Relentless Hook",
+  "type": "script",
+  "author": "88iczu26M8zBVFjr",
+  "img": "icons/svg/dice-target.svg",
+  "scope": "global",
+  "command": "// Registers a one-shot hook that intercepts the first lethal hit on the Tulpa\n// and sets HP to 1 instead of 0. Removes itself after triggering.\n\nconst tulpaToken = canvas.tokens.placeables.find(t => t.actor?.name === \"Tulpa\");\nif (!tulpaToken) {\n  ui.notifications.warn(\"No Tulpa on canvas — Relentless not armed.\");\n  return;\n}\nconst tulpa = tulpaToken.actor;\n\n// Don't re-register if already used this casting\nif (tulpa.getFlag(\"manifest-tulpa\", \"relentlessUsed\")) {\n  ui.notifications.warn(\"Relentless has already triggered this casting.\");\n  return;\n}\n\nlet hookId;\nhookId = Hooks.on(\"preUpdateActor\", (actor, changes, _options, _userId) => {\n  if (actor.uuid !== tulpa.uuid) return;\n\n  const newHp = foundry.utils.getProperty(changes, \"system.attributes.hp.value\");\n  if (newHp === undefined || newHp > 0) return; // Not a lethal hit\n\n  // Intercept — floor at 1 instead of 0\n  foundry.utils.setProperty(changes, \"system.attributes.hp.value\", 1);\n  Hooks.off(\"preUpdateActor\", hookId);\n  actor.setFlag(\"manifest-tulpa\", \"relentlessUsed\", true);\n\n  ChatMessage.create({\n    content: `<div style=\"text-align:center; padding:4px\">\n      <strong>⚡ Relentless!</strong><br>\n      The Tulpa's will holds — it drops to 1 HP rather than falling.\n    </div>`,\n    speaker: ChatMessage.getSpeaker({ actor: tulpa })\n  });\n});\n\nui.notifications.info(\"Relentless armed — watching for lethal damage on the Tulpa.\");",
+  "folder": null,
+  "flags": {
+    "scene-packer": {
+      "hash": "e0ed4714004c43a5c3cd4d32bead6c6bdb658390",
+      "sourceId": "Macro.4eGO2rVb2XTdJl1B"
+    },
+    "advanced-macros": {
+      "runForSpecificUser": ""
+    },
+    "macro-wheel": {
+      "activeCondition": ""
+    }
+  },
+  "_stats": {
+    "compendiumSource": null,
+    "duplicateSource": null,
+    "exportSource": {
+      "worldId": "ahvantir",
+      "uuid": "Macro.4eGO2rVb2XTdJl1B",
+      "coreVersion": "13.351",
+      "systemId": "dnd5e",
+      "systemVersion": "5.2.5"
+    },
+    "coreVersion": "13.351",
+    "systemId": "dnd5e",
+    "systemVersion": "5.2.5",
+    "createdTime": 1779492232988,
+    "modifiedTime": 1779492344761,
+    "lastModifiedBy": "88iczu26M8zBVFjr"
+  },
+  "ownership": {
+    "default": 0
+  }
+}

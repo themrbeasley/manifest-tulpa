@@ -1,0 +1,13 @@
+# Foundry pack build artifacts
+packs/
+
+# Node tooling
+node_modules/
+*.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+
+# Local Claude Code settings (personal, not project-wide)
+.claude/settings.local.json
