@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./constants.js";
+import { onPostUseActivity } from "./cast-flow.js";
 
 Hooks.once("init", () => {
   console.log(`${MODULE_ID} | init`);
@@ -6,5 +7,5 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", () => {
   console.log(`${MODULE_ID} | ready`);
-  // Hook wiring is filled in by Tasks 11–15.
+  Hooks.on("dnd5e.postUseActivity", onPostUseActivity);
 });
