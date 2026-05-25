@@ -58,4 +58,49 @@ export const MODIFICATIONS = {
       ],
     }),
   },
+  sizeShift_tiny: {
+    category: "morphic", slots: 2, kind: "ae", mutuallyExclusive: "sizeShift",
+    tokenSize: SIZE_TOKEN_SCALE.tiny,
+    template: aeTemplate({
+      name: "Size Shift: Tiny",
+      icon: "icons/svg/regen.svg",
+      changes: [{ key: "system.traits.size", mode: 5, value: "tiny", priority: 30 }],
+    }),
+  },
+  sizeShift_small: {
+    category: "morphic", slots: 1, kind: "ae", mutuallyExclusive: "sizeShift",
+    tokenSize: SIZE_TOKEN_SCALE.sm,
+    template: aeTemplate({
+      name: "Size Shift: Small",
+      icon: "icons/svg/regen.svg",
+      changes: [{ key: "system.traits.size", mode: 5, value: "sm", priority: 30 }],
+    }),
+  },
+  sizeShift_large: {
+    category: "morphic", slots: 1, kind: "ae", mutuallyExclusive: "sizeShift",
+    tokenSize: SIZE_TOKEN_SCALE.lg,
+    template: aeTemplate({
+      name: "Size Shift: Large",
+      icon: "icons/svg/regen.svg",
+      changes: [{ key: "system.traits.size", mode: 5, value: "lg", priority: 30 }],
+    }),
+  },
+  sizeShift_huge: {
+    category: "morphic", slots: 2, kind: "ae", mutuallyExclusive: "sizeShift",
+    tokenSize: SIZE_TOKEN_SCALE.huge,
+    template: aeTemplate({
+      name: "Size Shift: Huge",
+      icon: "icons/svg/regen.svg",
+      changes: [{ key: "system.traits.size", mode: 5, value: "huge", priority: 30 }],
+    }),
+  },
+  sizeShift_gargantuan: {
+    category: "morphic", slots: 3, kind: "ae", mutuallyExclusive: "sizeShift",
+    tokenSize: SIZE_TOKEN_SCALE.grg,
+    template: aeTemplate({
+      name: "Size Shift: Gargantuan",
+      icon: "icons/svg/regen.svg",
+      changes: [{ key: "system.traits.size", mode: 5, value: "grg", priority: 30 }],
+    }),
+  },
 };

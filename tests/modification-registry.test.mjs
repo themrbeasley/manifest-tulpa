@@ -47,3 +47,42 @@ test("unsettlingForm grants disadvantage on Wis and Cha saves via midi-qol flag 
   ]);
   for (const c of m.template.changes) assert.equal(c.value, "1");
 });
+
+test("size shifts share the mutually-exclusive group 'sizeShift'", () => {
+  const sizes = ["sizeShift_tiny","sizeShift_small","sizeShift_large","sizeShift_huge","sizeShift_gargantuan"];
+  for (const slug of sizes) {
+    assert.equal(MODIFICATIONS[slug].mutuallyExclusive, "sizeShift", `${slug} missing mutuallyExclusive`);
+  }
+});
+
+test("size shift slot costs match the spell text", () => {
+  assert.equal(MODIFICATIONS.sizeShift_small.slots,      1);
+  assert.equal(MODIFICATIONS.sizeShift_large.slots,      1);
+  assert.equal(MODIFICATIONS.sizeShift_tiny.slots,       2);
+  assert.equal(MODIFICATIONS.sizeShift_huge.slots,       2);
+  assert.equal(MODIFICATIONS.sizeShift_gargantuan.slots, 3);
+});
+
+test("size shifts carry a tokenSize for the imperative resize at apply time", () => {
+  assert.deepEqual(MODIFICATIONS.sizeShift_tiny.tokenSize,       { width: 0.5, height: 0.5 });
+  assert.deepEqual(MODIFICATIONS.sizeShift_small.tokenSize,      { width: 1,   height: 1   });
+  assert.deepEqual(MODIFICATIONS.sizeShift_large.tokenSize,      { width: 2,   height: 2   });
+  assert.deepEqual(MODIFICATIONS.sizeShift_huge.tokenSize,       { width: 3,   height: 3   });
+  assert.deepEqual(MODIFICATIONS.sizeShift_gargantuan.tokenSize, { width: 4,   height: 4   });
+});
+
+test("each size shift OVERRIDEs system.traits.size with the correct dnd5e size code", () => {
+  const cases = [
+    ["sizeShift_tiny",       "tiny"],
+    ["sizeShift_small",      "sm"],
+    ["sizeShift_large",      "lg"],
+    ["sizeShift_huge",       "huge"],
+    ["sizeShift_gargantuan", "grg"],
+  ];
+  for (const [slug, sizeCode] of cases) {
+    const c = MODIFICATIONS[slug].template.changes.find(x => x.key === "system.traits.size");
+    assert.ok(c, `${slug} missing size change`);
+    assert.equal(c.mode, 5);
+    assert.equal(c.value, sizeCode);
+  }
+});
