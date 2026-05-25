@@ -1,35 +1,37 @@
-<section>
-  <fieldset>
-    <legend>{{localize "MANIFEST_TULPA.Dialog.DamageType"}}</legend>
-    {{#each damageTypes}}
-      <label class="mt-row">
-        <input type="radio" name="damageType" value="{{this}}" {{#if (eq this ../damageType)}}checked{{/if}}>
-        {{localize (concat "MANIFEST_TULPA.Dialog." (capitalize this))}}
-      </label>
-    {{/each}}
-  </fieldset>
-
-  <fieldset>
-    <legend>{{localize "MANIFEST_TULPA.Dialog.Modifications"}}</legend>
-    {{#each categories}}
-      <div class="mt-category">{{localize this.label}}</div>
-      {{#each (lookup ../grouped this.key)}}
+<div class="mt-cast-body">
+  <section>
+    <fieldset>
+      <legend>{{localize "MANIFEST_TULPA.Dialog.DamageType"}}</legend>
+      {{#each damageTypes}}
         <label class="mt-row">
-          <input type="checkbox" data-slug="{{this.slug}}"
-                 {{#if this.isSelected}}checked{{/if}}>
-          <span>{{this.slug}}</span>
-          <span>({{this.slots}})</span>
+          <input type="radio" name="damageType" value="{{this}}" {{#if (eq this ../damageType)}}checked{{/if}}>
+          {{localize (concat "MANIFEST_TULPA.Dialog." (capitalize this))}}
         </label>
       {{/each}}
-    {{/each}}
-  </fieldset>
+    </fieldset>
 
-  <div class="mt-slot-counter {{#if overBudget}}over{{/if}}">
-    {{localize "MANIFEST_TULPA.Dialog.SlotsUsed" used=slotsUsed max=slotsMax}}
-  </div>
-</section>
+    <fieldset>
+      <legend>{{localize "MANIFEST_TULPA.Dialog.Modifications"}}</legend>
+      {{#each categories}}
+        <div class="mt-category">{{localize this.label}}</div>
+        {{#each (lookup ../grouped this.key)}}
+          <label class="mt-row">
+            <input type="checkbox" data-slug="{{this.slug}}"
+                   {{#if this.isSelected}}checked{{/if}}>
+            <span>{{this.slug}}</span>
+            <span>({{this.slots}})</span>
+          </label>
+        {{/each}}
+      {{/each}}
+    </fieldset>
 
-<footer class="form-footer">
-  <button type="button" data-action="cancel">{{localize "MANIFEST_TULPA.Dialog.Cancel"}}</button>
-  <button type="submit" {{#if overBudget}}disabled{{/if}}>{{localize "MANIFEST_TULPA.Dialog.Confirm"}}</button>
-</footer>
+    <div class="mt-slot-counter {{#if overBudget}}over{{/if}}">
+      {{localize "MANIFEST_TULPA.Dialog.SlotsUsed" used=slotsUsed max=slotsMax}}
+    </div>
+  </section>
+
+  <footer class="form-footer">
+    <button type="button" data-action="cancel">{{localize "MANIFEST_TULPA.Dialog.Cancel"}}</button>
+    <button type="submit" {{#if overBudget}}disabled{{/if}}>{{localize "MANIFEST_TULPA.Dialog.Confirm"}}</button>
+  </footer>
+</div>

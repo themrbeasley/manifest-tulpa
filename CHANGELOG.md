@@ -4,6 +4,14 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-05-25
+
+> Addresses the sole critical finding from the v0.1.4 smoke-test report ([docs/superpowers/test-plans/manifest-tulpa-test-report-v0.1.4.md](docs/superpowers/test-plans/manifest-tulpa-test-report-v0.1.4.md)). All downstream sections (3–8) that were BLOCKED in that report (modifications, Harrowing Presence, shared initiative, Relentless, dismissal, session reload) are now unblocked but still require live Foundry verification.
+
+### Fixed
+
+- **Cast dialog crashed on render with `Template part "body" must render a single HTML element`.** `templates/cast-dialog.hbs` rendered two top-level elements (`<section>` and `<footer>`), violating Foundry V13 `HandlebarsApplicationMixin`'s one-root-per-PART rule. Foundry parses the rendered HTML and rejects any part-template producing more than one top-level child, so the cast dialog never reached the DOM — taking the entire cast flow down with it (stat adjustments, modification application, anchor AE, Relentless arming, initiative alignment, manifest animation, chat card). The two-root-element problem was latent in v0.1.3 too, but the `{{in}}` helper crash there fired earlier in the pipeline and masked it; fixing the helper in v0.1.4 simply exposed the next layer. Fixed by wrapping the template's `<section>` and `<footer>` in a single `<div class="mt-cast-body">` root. No JavaScript changes — `_attachPartListeners` already scopes selectors to the part's root element.
+
 ## [0.1.4] — 2026-05-25
 
 > Addresses every actionable finding from the v0.1.3 smoke-test report ([docs/superpowers/test-plans/manifest-tulpa-test-report-2026-05-25.md](docs/superpowers/test-plans/manifest-tulpa-test-report-2026-05-25.md)). The runtime tests that were BLOCKED in that report (Sections 3–8) are now unblocked but still require live Foundry verification.
@@ -109,6 +117,7 @@ End-user manifest URL:
 https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.json
 ```
 
+[0.1.5]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.5
 [0.1.4]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.4
 [0.1.3]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.3
 [0.1.2]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.2
