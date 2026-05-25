@@ -12,28 +12,49 @@
 
 - Open the browser console. Expected: two log lines `manifest-tulpa | init` and `manifest-tulpa | ready`.
 
-## v0.1.4 regression checks
+## Regression checks (v0.1.4 → v0.1.6)
 
-Run these before the full smoke test. Each verifies a specific fix from the v0.1.3 → v0.1.4 patch set ([CHANGELOG.md](../../../CHANGELOG.md#014--2026-05-25), [test report](manifest-tulpa-test-report-2026-05-25.md)).
+Run these before the full smoke test. Each verifies a specific fix from the per-version patch sets. See [CHANGELOG.md](../../../CHANGELOG.md) and the corresponding test reports for full context.
+
+### v0.1.4 fixes — [test report](manifest-tulpa-test-report-2026-05-25.md)
 
 | # | Check | Why |
 |---|---|---|
 | R1 | Open the spell card on the PC sheet. Material component reads "(a crystal shard imbued with your psychic resonance, worth at least 100 GP)" and is **not** marked consumed. Range shows "30 ft." | Materials text + range matched to `manifest-tulpa.txt` RAW. |
 | R2 | Open the Tulpa actor sheet (drag from the Actors compendium). Features tab shows **Manifestation Strike** only — **no "Tether" feat**. | Vestigial Tether feat removed. |
 | R3 | Cast Manifest Tulpa. After the dnd5e slot dialog, the placement crosshair / template appears bounded to within 30 feet of the caster (placing outside the radius is rejected by dnd5e's summon UI). | Summon-activity range now `30 ft` with `override: true`. |
-| R4 | Cast dialog opens after placement **without** a console error. Console must NOT contain `Missing helper: "in"` or `Failed to render Application "manifest-tulpa-cast-dialog"`. | `{{in}}` helper bug fixed; `isSelected` now pre-computed in `_prepareContext`. |
+| R4 | Cast dialog opens after placement **without** a console error. Console must NOT contain `Missing helper: "in"`, `Failed to render Application "manifest-tulpa-cast-dialog"`, or `Template part "body" must render a single HTML element`. | `{{in}}` helper bug fixed (v0.1.4); template single-root wrap added (v0.1.5). |
 | R5 | In the console, run `Hooks.events["dnd5e.postUseActivity"]?.length`. Expected: 1, regardless of how many times the world was reloaded. | `globalThis.__manifestTulpaHooksRegistered` guard prevents listener accumulation. |
 
-If R4 fails, **stop** and reopen the v0.1.3 report's Section 2 — the cast flow is the gate to every downstream test.
+### v0.1.5 fix — [test report](manifest-tulpa-test-report-v0.1.4.md)
+
+The sole v0.1.5 fix (cast-dialog single-root template wrap) is already covered by **R4** above — the assertion now includes the `Template part "body" must render a single HTML element` message that this fix resolves.
+
+### v0.1.6 fixes — [test report](manifest-tulpa-test-report-v0.1.5.md)
+
+| # | Check | Why |
+|---|---|---|
+| R6 | Cast Manifest Tulpa, place the token, confirm the cast dialog. Console must NOT contain `Summon produced no token — check the spell's summon activity` and the caster sheet must show the **Manifest Tulpa (active)** anchor AE within a second. | `locateSummonedTulpa` now matches `flags.dnd5e.summon.origin` by `startsWith` prefix instead of strict equality (Bug 1). |
+| R7 | After confirming the dialog with **Empowered Strikes** + a damage type, open the Tulpa's Manifestation Strike. Both **melee** and **ranged** activities show a `1d8` damage entry of the chosen type alongside the original `2d8`. Console must NOT contain `TypeError: Cannot read properties of undefined (reading 'push')`. | `empoweredStrikes.patch` now iterates `system.activities.<id>.damage.parts` and returns a per-activity diff (Bug 3). |
+| R8 | After confirming the dialog with any damage type, open the Tulpa's Manifestation Strike. The first damage entry in each activity shows the **chosen damage type** (not "Bludgeoning"). | `setStrikeDamageType` writes to `system.activities.<id>.damage.parts[0].types` (Bug 2). |
+| R9 | Dismiss the Tulpa (any trigger: re-cast, manual token delete, `game.time.advance(3600)`). The token disappears within **≤ 5 seconds** even if jb2a assets are missing or autoanimations is disabled. Console may show a single `dismiss animation timed out after 5000ms` warning — that's expected when assets aren't indexed. | 5-second `Promise.race` wrapper on all Sequencer calls (Bug 4). |
+| R10 | After confirming the dialog, the Tulpa sheet shows: **AC = 13 + caster spellcasting mod**, **HP = 40 + 5 × caster level** (both max and current), **Spellcasting Ability** set to the caster's, **Spell DC** matching the caster's, **CR** matching the caster's proficiency bonus (prof 2→CR 1, 3→5, 4→9, 5→13, 6→17). | New `applyCasterStats` step bakes caster-derived stats onto the spawned actor. |
+| R11 | Cast with **Harrowing Presence** + place a hostile NPC in range, then start combat. On the NPC's turn-start, a Wis save posts to chat. Console must NOT contain a `TypeError` from `harrowing-presence-hook.js`. | `rollSavingThrow` return-shape (Array<D20Roll> \| single roll \| null) is normalized and wrapped in try/catch. |
+
+If R4 or R6 fails, **stop** and re-open the most recent test report's Section 2 — the cast flow is the gate to every downstream test.
 
 ## Cast flow happy path (verifies Tasks 10, 11)
 
 1. Cast Manifest Tulpa at slot 5.
 2. Slot dialog appears → submit. Slot is consumed.
-3. **Tulpa appears on canvas with base stats** (no AC bonus, no extra HP). Placement is bounded to within 30 ft of the caster (see R3).
+3. **Tulpa appears on canvas with the actor template's flat baseline** (AC 13, HP 40, no spellcasting ability). Placement is bounded to within 30 ft of the caster (see R3). The caster-derived stats are applied in step 6 after the cast dialog confirms.
 4. Cast dialog opens. Radio shows force/radiant/psychic; checkboxes are grouped by category.
 5. Pick **psychic**, **Reinforced Form**, **Vital Surge**. Slot counter shows 2/2. Confirm.
-6. Tulpa sheet now shows AC +2 and HP max +30. Manifestation Strike damage type is psychic.
+6. Tulpa sheet now shows:
+   - **AC** = `13 + caster spellcasting mod + 2` (Reinforced Form adds +2 on top of the `applyCasterStats` baseline).
+   - **HP max** = `40 + 5 × caster level + 30` (Vital Surge adds +30 on top of the baseline).
+   - **Spellcasting Ability**, **Spell DC**, and **CR** match the caster (see R10).
+   - **Manifestation Strike** damage type is psychic on both melee and ranged activities (see R8).
 7. Cast confirmation chat card posts.
 8. Manifestation animation plays (purple→pink ring) if jb2a_patreon present.
 
