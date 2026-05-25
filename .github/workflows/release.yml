@@ -51,7 +51,7 @@ jobs:
       - name: Zip module bundle
         run: |
           zip -r manifest-tulpa.zip \
-            module.json LICENSE README.md \
+            module.json LICENSE README.md CHANGELOG.md \
             modules/ styles/ lang/ templates/ packs/ \
             -x "packs/**/.gitkeep"
 
