@@ -42,6 +42,30 @@ function clean(doc) {
   }
 }
 
+// foundryvtt-cli silently skips any doc without a `_key` field when packing to
+// LevelDB. The format is `!<collection-path>!<id-path>` where the collection
+// path matches the embedding hierarchy and the id path is the dotted chain of
+// _ids from the top-level doc down to the embedded one.
+function setActorKeys(a) {
+  a._key = `!actors!${a._id}`;
+  for (const e of a.effects ?? []) {
+    e._key = `!actors.effects!${a._id}.${e._id}`;
+  }
+  for (const i of a.items ?? []) {
+    i._key = `!actors.items!${a._id}.${i._id}`;
+    for (const e of i.effects ?? []) {
+      e._key = `!actors.items.effects!${a._id}.${i._id}.${e._id}`;
+    }
+  }
+}
+
+function setItemKeys(s) {
+  s._key = `!items!${s._id}`;
+  for (const e of s.effects ?? []) {
+    e._key = `!items.effects!${s._id}.${e._id}`;
+  }
+}
+
 function scrubActor() {
   const a = JSON.parse(readFileSync(ACTOR_SRC, "utf8"));
   // Lock the actor _id so the spell can reference it deterministically.
@@ -66,6 +90,7 @@ function scrubActor() {
   delete a.flags?.ActiveAuras;
 
   clean(a);
+  setActorKeys(a);
   mkdirSync(dirname(ACTOR_OUT), { recursive: true });
   writeFileSync(ACTOR_OUT, JSON.stringify(a, null, 2) + "\n", "utf8");
   console.log(`wrote ${ACTOR_OUT}`);
@@ -102,6 +127,7 @@ function scrubSpell() {
   s.system.source.rules ??= "2024";
 
   clean(s);
+  setItemKeys(s);
   mkdirSync(dirname(SPELL_OUT), { recursive: true });
   writeFileSync(SPELL_OUT, JSON.stringify(s, null, 2) + "\n", "utf8");
   console.log(`wrote ${SPELL_OUT}`);

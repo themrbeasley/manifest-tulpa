@@ -24,6 +24,28 @@ export async function validateAll({ actorMutator, spellMutator } = {}) {
   if (actorMutator) actorMutator(actor);
   if (spellMutator) spellMutator(spell);
 
+  // _key checks — foundryvtt-cli silently skips docs without _key, producing empty packs.
+  const expectedActorKey = `!actors!${actor._id}`;
+  if (actor._key !== expectedActorKey) errors.push(`actor._key must be "${expectedActorKey}" (got "${actor._key}")`);
+  for (const e of actor.effects ?? []) {
+    const want = `!actors.effects!${actor._id}.${e._id}`;
+    if (e._key !== want) errors.push(`actor.effects[${e._id}]._key must be "${want}" (got "${e._key}")`);
+  }
+  for (const i of actor.items ?? []) {
+    const want = `!actors.items!${actor._id}.${i._id}`;
+    if (i._key !== want) errors.push(`actor.items[${i.name}]._key must be "${want}" (got "${i._key}")`);
+    for (const e of i.effects ?? []) {
+      const wantE = `!actors.items.effects!${actor._id}.${i._id}.${e._id}`;
+      if (e._key !== wantE) errors.push(`actor.items[${i.name}].effects[${e._id}]._key must be "${wantE}" (got "${e._key}")`);
+    }
+  }
+  const expectedSpellKey = `!items!${spell._id}`;
+  if (spell._key !== expectedSpellKey) errors.push(`spell._key must be "${expectedSpellKey}" (got "${spell._key}")`);
+  for (const e of spell.effects ?? []) {
+    const want = `!items.effects!${spell._id}.${e._id}`;
+    if (e._key !== want) errors.push(`spell.effects[${e._id}]._key must be "${want}" (got "${e._key}")`);
+  }
+
   // Actor checks
   if ((actor.effects ?? []).length !== 0) errors.push(`actor.effects must be empty (has ${actor.effects.length})`);
   for (const i of actor.items ?? []) {

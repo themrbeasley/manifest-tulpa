@@ -4,7 +4,15 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] — 2026-05-25
+
+### Fixed
+
+- **Compendium packs were empty.** v0.1.0 and v0.1.1 both shipped with empty LevelDB packs — the spell and statblock did not appear in Foundry. `scripts/scrub-source.mjs` set each doc's `_id` but not its `_key`, and `@foundryvtt/foundryvtt-cli`'s `compileClassicLevel` silently skips any document missing `_key`. Fixed by writing the full `_key` chain (`!actors!<id>`, `!actors.items!<actorId>.<itemId>`, etc.) into the scrubbed source, and added validator assertions + regression tests so this can't ship a third time.
+
 ## [0.1.1] — 2026-05-25
+
+> **Known issue (fixed in 0.1.2):** packs shipped empty because the scrub script omitted the `_key` field required by foundryvtt-cli.
 
 ### Fixed
 
@@ -72,5 +80,6 @@ End-user manifest URL:
 https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.json
 ```
 
+[0.1.2]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.2
 [0.1.1]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.1
 [0.1.0]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.0

@@ -222,5 +222,6 @@
   "ownership": {
     "default": 0
   },
-  "_id": "manifesttulpaspell"
+  "_id": "manifesttulpaspell",
+  "_key": "!items!manifesttulpaspell"
 }

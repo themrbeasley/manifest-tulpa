@@ -1070,7 +1070,8 @@
       },
       "ownership": {
         "default": 0
-      }
+      },
+      "_key": "!actors.items!manifesttulpa0001.E2otJ30orXNIeyUb"
     },
     {
       "name": "Tether",
@@ -1117,7 +1118,8 @@
       },
       "ownership": {
         "default": 0
-      }
+      },
+      "_key": "!actors.items!manifesttulpa0001.nCNU6p9qeEbwlOYH"
     }
   ],
   "effects": [],
@@ -1135,5 +1137,6 @@
   "ownership": {
     "default": 0
   },
-  "_id": "manifesttulpa0001"
+  "_id": "manifesttulpa0001",
+  "_key": "!actors!manifesttulpa0001"
 }

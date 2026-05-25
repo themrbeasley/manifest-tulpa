@@ -22,3 +22,27 @@ test("validateAll fails when spell description is empty", async () => {
   assert.equal(ok, false);
   assert.ok(errors.some(e => /description/.test(e)));
 });
+
+test("validateAll fails when actor is missing _key (v0.1.1 regression)", async () => {
+  const { ok, errors } = await validateAll({
+    actorMutator: doc => { delete doc._key; },
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /actor\._key/.test(e)));
+});
+
+test("validateAll fails when an embedded item is missing _key", async () => {
+  const { ok, errors } = await validateAll({
+    actorMutator: doc => { delete doc.items[0]._key; },
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /actor\.items.*_key/.test(e)));
+});
+
+test("validateAll fails when spell is missing _key", async () => {
+  const { ok, errors } = await validateAll({
+    spellMutator: doc => { delete doc._key; },
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /spell\._key/.test(e)));
+});
