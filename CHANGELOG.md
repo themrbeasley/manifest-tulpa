@@ -4,6 +4,22 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] — 2026-05-25
+
+> Addresses every actionable finding from the v0.1.5 smoke-test report ([docs/superpowers/test-plans/manifest-tulpa-test-report-v0.1.5.md](docs/superpowers/test-plans/manifest-tulpa-test-report-v0.1.5.md)). v0.1.5 was the first release where the cast dialog rendered in live Foundry; v0.1.6 fixes the run-time data-model and UUID-resolution bugs that were hidden behind the prior template crash. The cast flow now completes end-to-end in static analysis; downstream sections (3–8) remain unblocked but still need live Foundry verification.
+
+### Fixed
+
+- **`locateSummonedTulpa` could never find the freshly placed Tulpa token (cast-flow Bug 1).** The fallback path compared each canvas token's `flags.dnd5e.summon.origin` against `caster.uuid` with strict equality. `summon.origin` is an *item/activity* UUID (`Actor.<id>.Item.<id>[.Activity.<id>]`), so the comparison was always false and `abortAndCleanup` immediately ran against a `null` token — taking down every post-dialog step (stat adjustments, modifications, anchor AE, animations, chat card). Switched the comparison to a `startsWith` prefix match on `${caster.uuid}.`. Same actor-vs-item UUID confusion was also fixed in `initiative.js#onCombatStart` (new `casterUuidFromOrigin` regex helper that extracts the `Actor.<id>` prefix before `fromUuidSync`) and `dismiss-flow.js#onPreDeleteToken` (inline regex match on the origin string).
+- **`setStrikeDamageType` wrote to the wrong damage path (cast-flow Bug 2).** The function targeted `system.damage.parts[0].types`, but in dnd5e 5.2.5 the Manifestation Strike's damage lives inside each *activity*'s `damage.parts` (`system.activities.<id>.damage.parts`). The old top-level path doesn't exist, so the `deepClone` returned an empty array, the length check bailed, and the damage type was never set — meaning the strike would have dealt untyped damage even if the rest of the flow had completed. Rewrote to iterate every activity on the strike and update the first damage entry of each, so both melee and ranged profiles carry the chosen damage type.
+- **`empoweredStrikes.patch` crashed with `TypeError: Cannot read properties of undefined (reading 'push')` (modification-registry Bug 3).** Same root cause as Bug 2 in a different file — the patch cloned `strike.system.damage.parts` (undefined in 5.2.5) and then tried to `.push()` onto the result. Rewrote the patch to walk `system.activities.<id>.damage.parts` for every activity and append a `+1d8` of the chosen damage type, returning a multi-key update diff. Updated the corresponding unit test to assert the per-activity diff shape and to verify both the original and the added damage entries survive on every strike activity.
+- **`playDismiss` (and `playManifest` / `playRelentless`) could hang indefinitely on missing Sequencer assets (animations Bug 4).** `.waitUntilFinished(-200)` resolves only when the visual finishes — if the asset is missing or stalled, the promise never resolves. The existing try/catch only caught thrown errors. Wrapped every Sequence `.play()` in a 5-second `Promise.race` timeout with a `.finally()`-cleared timer; the timeout rejection is then caught by the existing handler and downgraded to a single console warning, so the cast/dismiss/Relentless flow always continues even when the asset library isn't indexed.
+- **`harrowing-presence-hook` could throw on the dnd5e 5.2.5 save API (test report §4 risk).** `actor.rollSavingThrow(...)` in dnd5e 5.2.5 may return `Array<D20Roll>`, a single roll, or `null`. The hook indexed `.total` directly on the return value, which would have NaN'd or thrown on the array path. Wrapped the call in a try/catch (warns and exits on failure) and normalized the return to the first roll's `total` before the DC comparison.
+
+### Added
+
+- **`applyCasterStats` step in the cast flow.** The compendium Tulpa actor ships with flat AC 13 / HP 40 / CR 1 / no spellcasting ability — dnd5e's summon `bonuses` and `match` fields aren't reliably honored by NPC statblocks in 5.2.5, so the v0.1.5 report observed the spawned Tulpa keeping all of those raw template values. Added an `applyCasterStats(tulpa, caster, slotLevel)` helper that runs immediately after `locateSummonedTulpa` returns and imperatively writes the spell formulas onto the spawned actor: AC `13 + spellMod`, HP `40 + 5 × casterLevel` (max + current), the caster's spellcasting ability + spell DC, a CR chosen to yield the caster's proficiency bonus (`profToCR` inverse mapping: prof 2→CR 1, 3→5, 4→9, 5→13, 6→17), and mirrored STR/CON save proficiencies. This keeps the source pack untouched (no `_key` regression risk, no compendium rebuild needed) and avoids tying the formulas to a specific summon-system field path.
+
 ## [0.1.5] — 2026-05-25
 
 > Addresses the sole critical finding from the v0.1.4 smoke-test report ([docs/superpowers/test-plans/manifest-tulpa-test-report-v0.1.4.md](docs/superpowers/test-plans/manifest-tulpa-test-report-v0.1.4.md)). All downstream sections (3–8) that were BLOCKED in that report (modifications, Harrowing Presence, shared initiative, Relentless, dismissal, session reload) are now unblocked but still require live Foundry verification.
@@ -117,6 +133,7 @@ End-user manifest URL:
 https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.json
 ```
 
+[0.1.6]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.6
 [0.1.5]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.5
 [0.1.4]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.4
 [0.1.3]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.3

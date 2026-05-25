@@ -42,7 +42,11 @@ export async function onDeleteActiveEffect(effect /*, options, userId */) {
 export async function onPreDeleteToken(tokenDoc) {
   const summonOrigin = tokenDoc.actor?.getFlag?.("dnd5e", "summon")?.origin;
   if (!summonOrigin) return;
-  const caster = await fromUuid(summonOrigin);
+  // `summon.origin` is an item/activity UUID (`Actor.X.Item.Y[.Activity.Z]`).
+  // We need the Actor.X prefix to resolve the *caster*, not the spell item.
+  const casterUuidMatch = summonOrigin.match(/^(Actor\.[^.]+)/);
+  if (!casterUuidMatch) return;
+  const caster = await fromUuid(casterUuidMatch[1]);
   if (!caster) return;
   const anchor = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid") === tokenDoc.actor.uuid);
   if (!anchor) return;

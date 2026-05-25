@@ -52,6 +52,12 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   }
   const tulpa = token.actor;
 
+  // Step 1b: apply caster-derived base stats. The base actor template ships with flat
+  // AC 13 / HP 40 / CR 1 and an empty spellcasting ability; dnd5e's summon `bonuses` and
+  // `match` fields are not reliably honored by the npc statblock in 5.2.5, so we
+  // imperatively bake the spell's AC/HP/spellcasting/prof formulas onto the spawned actor.
+  await applyCasterStats(tulpa, caster, slotLevel);
+
   // Step 2: damage type on the Manifestation Strike.
   await setStrikeDamageType(tulpa, castConfig.damageType);
 
@@ -91,9 +97,15 @@ function parseSlotLevel(usageConfig) {
 function locateSummonedTulpa(results, caster) {
   const created = results?.createdTokens?.[0];
   if (created) return created;
-  // Fallback: most recently created token whose summon.origin is this caster.
+  // Fallback: most recently created token whose summon.origin belongs to this caster.
+  // `flags.dnd5e.summon.origin` is an *item/activity* UUID (e.g. `Actor.xxx.Item.yyy.Activity.zzz`),
+  // not the caster actor's UUID. Match by prefix on the caster UUID.
+  const prefix = `${caster.uuid}.`;
   const candidates = canvas.tokens.placeables
-    .filter(t => t.actor?.getFlag?.("dnd5e", "summon")?.origin === caster.uuid);
+    .filter(t => {
+      const origin = t.actor?.getFlag?.("dnd5e", "summon")?.origin;
+      return typeof origin === "string" && origin.startsWith(prefix);
+    });
   candidates.sort((a, b) => (b.document._stats?.createdTime ?? 0) - (a.document._stats?.createdTime ?? 0));
   return candidates[0] ?? null;
 }
@@ -101,10 +113,55 @@ function locateSummonedTulpa(results, caster) {
 async function setStrikeDamageType(tulpa, damageType) {
   const strike = tulpa.items.find(i => i.name === "Manifestation Strike");
   if (!strike) return;
-  const parts = foundry.utils.deepClone(strike.system.damage?.parts ?? []);
-  if (!parts.length) return;
-  parts[0].types = [damageType];
-  await strike.update({ "system.damage.parts": parts });
+  // dnd5e 5.2.5 stores attack damage inside each activity's `damage.parts`.
+  // `system.damage.base` exists on the weapon but has empty `types` on this template.
+  const update = {};
+  for (const [actId, act] of Object.entries(strike.system?.activities ?? {})) {
+    const parts = foundry.utils.deepClone(act.damage?.parts ?? []);
+    if (!parts.length) continue;
+    parts[0].types = [damageType];
+    update[`system.activities.${actId}.damage.parts`] = parts;
+  }
+  if (Object.keys(update).length) await strike.update(update);
+}
+
+function profToCR(prof) {
+  // dnd5e CR-to-prof mapping (5e 2024): CR 0-4 -> +2, 5-8 -> +3, 9-12 -> +4, 13-16 -> +5, 17+ -> +6.
+  // Inverse: pick a CR that yields the caster's proficiency bonus.
+  if (prof >= 6) return 17;
+  if (prof >= 5) return 13;
+  if (prof >= 4) return 9;
+  if (prof >= 3) return 5;
+  return 1;
+}
+
+async function applyCasterStats(tulpa, caster, slotLevel) {
+  const casterAbility = caster.system?.attributes?.spellcasting || "int";
+  const abilityValue  = caster.system?.abilities?.[casterAbility]?.value ?? 10;
+  const spellMod      = caster.system?.abilities?.[casterAbility]?.mod
+                       ?? Math.floor((abilityValue - 10) / 2);
+  const casterLevel   = caster.system?.details?.level ?? 1;
+  const casterProf    = caster.system?.attributes?.prof ?? 2;
+  const casterSpellDC = caster.system?.attributes?.spelldc
+                       ?? (8 + casterProf + spellMod);
+
+  const hpTotal = 40 + 5 * casterLevel;
+
+  const updates = {
+    "system.attributes.ac.calc": "flat",
+    "system.attributes.ac.flat": 13 + spellMod,
+    "system.attributes.hp.max":     hpTotal,
+    "system.attributes.hp.value":   hpTotal,
+    "system.attributes.spellcasting": casterAbility,
+    "system.attributes.spelldc": casterSpellDC,
+    "system.details.cr": profToCR(casterProf),
+    [`system.abilities.${casterAbility}.value`]: abilityValue,
+    // STR & CON save proficiencies mirror the caster (spell text).
+    "system.abilities.str.proficient": caster.system?.abilities?.str?.proficient ? 1 : 0,
+    "system.abilities.con.proficient": caster.system?.abilities?.con?.proficient ? 1 : 0,
+  };
+
+  await tulpa.update(updates);
 }
 
 async function applyModifications(tulpa, caster, castConfig) {

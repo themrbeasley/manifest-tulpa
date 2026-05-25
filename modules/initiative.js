@@ -1,6 +1,18 @@
 import { MODULE_ID } from "./constants.js";
 
 /**
+ * Extracts the caster actor UUID from a dnd5e summon origin string.
+ * `flags.dnd5e.summon.origin` is an item/activity UUID like
+ * `Actor.<id>.Item.<id>` or `Actor.<id>.Item.<id>.Activity.<id>`; we want the
+ * `Actor.<id>` prefix so we can resolve the *caster*, not the spell item.
+ */
+function casterUuidFromOrigin(origin) {
+  if (typeof origin !== "string") return null;
+  const m = origin.match(/^(Actor\.[^.]+)/);
+  return m?.[1] ?? null;
+}
+
+/**
  * Aligns a single Tulpa combatant to its summoner's initiative - 0.01.
  * Idempotent — re-aligns if combat re-starts mid-cast.
  */
@@ -24,7 +36,9 @@ export function onCombatStart(combat) {
     if (!tulpa) continue;
     const summon = tulpa.getFlag?.("dnd5e", "summon");
     if (!summon?.origin) continue;
-    const caster = fromUuidSync(summon.origin);
+    const casterUuid = casterUuidFromOrigin(summon.origin);
+    if (!casterUuid) continue;
+    const caster = fromUuidSync(casterUuid);
     if (!caster?.id) continue;
     const cCombatant = combat.combatants.find(c => c.actorId === caster.id);
     if (!cCombatant) continue;

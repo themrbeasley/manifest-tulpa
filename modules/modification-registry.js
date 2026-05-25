@@ -105,12 +105,26 @@ export const MODIFICATIONS = {
   },
   empoweredStrikes: {
     category: "combat", slots: 1, kind: "item-patch",
+    // In dnd5e 5.2.5 the Manifestation Strike weapon stores damage entries inside each
+    // activity's `damage.parts`, not at `system.damage.parts`. Append a +1d8 of the chosen
+    // damage type to every activity (melee + ranged) so both attack profiles benefit.
     patch: (strike, damageType) => {
-      const parts = globalThis.foundry?.utils?.deepClone
-        ? globalThis.foundry.utils.deepClone(strike.system.damage.parts)
-        : structuredClone(strike.system.damage.parts);
-      parts.push({ number: 1, denomination: 8, bonus: "", types: [damageType], custom: { enabled: false, formula: "" }, scaling: { mode: "", number: null, formula: "" } });
-      return { "system.damage.parts": parts };
+      const clone = globalThis.foundry?.utils?.deepClone ?? structuredClone;
+      const update = {};
+      const activities = strike?.system?.activities ?? {};
+      for (const [actId, act] of Object.entries(activities)) {
+        const parts = clone(act.damage?.parts ?? []);
+        parts.push({
+          number: 1,
+          denomination: 8,
+          bonus: "",
+          types: [damageType],
+          custom: { enabled: false, formula: "" },
+          scaling: { mode: "", number: null, formula: "" },
+        });
+        update[`system.activities.${actId}.damage.parts`] = parts;
+      }
+      return update;
     },
   },
   multiattack: {

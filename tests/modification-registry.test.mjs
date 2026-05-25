@@ -87,17 +87,29 @@ test("each size shift OVERRIDEs system.traits.size with the correct dnd5e size c
   }
 });
 
-test("empoweredStrikes patches a strike item to add 1d8 of the chosen damage type", () => {
+test("empoweredStrikes patches every strike activity to add 1d8 of the chosen damage type", () => {
   const m = MODIFICATIONS.empoweredStrikes;
   assert.equal(m.kind, "item-patch");
-  const update = m.patch({
-    system: { damage: { parts: [{ number: 1, denomination: 8, types: ["force"] }] } },
-  }, "psychic");
-  // The patch must return a diff that adds a new damage part with 1d8 psychic.
-  const newParts = update["system.damage.parts"] ?? update.system?.damage?.parts;
-  assert.ok(Array.isArray(newParts) && newParts.length >= 2, "expected an added 1d8 part");
-  const added = newParts.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("psychic"));
-  assert.ok(added, "1d8 psychic part missing");
+  // dnd5e 5.2.5 stores damage entries inside each activity's `damage.parts`.
+  const strike = {
+    system: {
+      activities: {
+        melee01: { damage: { parts: [{ number: 2, denomination: 8, bonus: "@mod", types: ["bludgeoning"] }] } },
+        ranged1: { damage: { parts: [{ number: 2, denomination: 8, bonus: "@mod", types: ["bludgeoning"] }] } },
+      },
+    },
+  };
+  const update = m.patch(strike, "psychic");
+  for (const actId of ["melee01", "ranged1"]) {
+    const newParts = update[`system.activities.${actId}.damage.parts`];
+    assert.ok(Array.isArray(newParts) && newParts.length >= 2,
+      `expected ${actId} to gain a 1d8 damage entry`);
+    const added = newParts.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("psychic"));
+    assert.ok(added, `${actId} missing the new 1d8 psychic part`);
+    // Existing bludgeoning entry must be preserved.
+    const original = newParts.find(p => (p.types ?? []).includes("bludgeoning"));
+    assert.ok(original, `${actId} lost its original bludgeoning entry`);
+  }
 });
 
 test("multiattack inserts a feat item the player triggers manually", () => {
