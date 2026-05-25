@@ -12,11 +12,25 @@
 
 - Open the browser console. Expected: two log lines `manifest-tulpa | init` and `manifest-tulpa | ready`.
 
+## v0.1.4 regression checks
+
+Run these before the full smoke test. Each verifies a specific fix from the v0.1.3 → v0.1.4 patch set ([CHANGELOG.md](../../../CHANGELOG.md#014--2026-05-25), [test report](manifest-tulpa-test-report-2026-05-25.md)).
+
+| # | Check | Why |
+|---|---|---|
+| R1 | Open the spell card on the PC sheet. Material component reads "(a crystal shard imbued with your psychic resonance, worth at least 100 GP)" and is **not** marked consumed. Range shows "30 ft." | Materials text + range matched to `manifest-tulpa.txt` RAW. |
+| R2 | Open the Tulpa actor sheet (drag from the Actors compendium). Features tab shows **Manifestation Strike** only — **no "Tether" feat**. | Vestigial Tether feat removed. |
+| R3 | Cast Manifest Tulpa. After the dnd5e slot dialog, the placement crosshair / template appears bounded to within 30 feet of the caster (placing outside the radius is rejected by dnd5e's summon UI). | Summon-activity range now `30 ft` with `override: true`. |
+| R4 | Cast dialog opens after placement **without** a console error. Console must NOT contain `Missing helper: "in"` or `Failed to render Application "manifest-tulpa-cast-dialog"`. | `{{in}}` helper bug fixed; `isSelected` now pre-computed in `_prepareContext`. |
+| R5 | In the console, run `Hooks.events["dnd5e.postUseActivity"]?.length`. Expected: 1, regardless of how many times the world was reloaded. | `globalThis.__manifestTulpaHooksRegistered` guard prevents listener accumulation. |
+
+If R4 fails, **stop** and reopen the v0.1.3 report's Section 2 — the cast flow is the gate to every downstream test.
+
 ## Cast flow happy path (verifies Tasks 10, 11)
 
 1. Cast Manifest Tulpa at slot 5.
 2. Slot dialog appears → submit. Slot is consumed.
-3. **Tulpa appears on canvas with base stats** (no AC bonus, no extra HP).
+3. **Tulpa appears on canvas with base stats** (no AC bonus, no extra HP). Placement is bounded to within 30 ft of the caster (see R3).
 4. Cast dialog opens. Radio shows force/radiant/psychic; checkboxes are grouped by category.
 5. Pick **psychic**, **Reinforced Form**, **Vital Surge**. Slot counter shows 2/2. Confirm.
 6. Tulpa sheet now shows AC +2 and HP max +30. Manifestation Strike damage type is psychic.

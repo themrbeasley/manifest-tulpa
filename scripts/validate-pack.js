@@ -12,7 +12,6 @@ const KEEP_ITEM_NAMES = new Set([
   "Manifestation Strike",
   "Manifestation Strike (Melee)",
   "Manifestation Strike (Ranged)",
-  "Tether",
 ]);
 
 function readJSON(p) { return JSON.parse(readFileSync(p, "utf8")); }

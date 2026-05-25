@@ -20,7 +20,6 @@ const KEEP_ITEM_NAMES = new Set([
   "Manifestation Strike",
   "Manifestation Strike (Melee)",
   "Manifestation Strike (Ranged)",
-  "Tether",
 ]);
 
 // Stable packed actor _id — used by the spell's summon profile UUID after scrub.

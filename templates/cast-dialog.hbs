@@ -16,7 +16,7 @@
       {{#each (lookup ../grouped this.key)}}
         <label class="mt-row">
           <input type="checkbox" data-slug="{{this.slug}}"
-                 {{#if (in this.slug ../../selected)}}checked{{/if}}>
+                 {{#if this.isSelected}}checked{{/if}}>
           <span>{{this.slug}}</span>
           <span>({{this.slots}})</span>
         </label>

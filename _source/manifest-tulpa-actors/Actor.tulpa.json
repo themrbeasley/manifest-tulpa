@@ -1072,54 +1072,6 @@
         "default": 0
       },
       "_key": "!actors.items!manifesttulpaA01.E2otJ30orXNIeyUb"
-    },
-    {
-      "name": "Tether",
-      "type": "feat",
-      "system": {
-        "description": {
-          "value": "<p><strong>Tether.</strong> If the Tulpa ends its turn more than 100 feet from its caster, it dissipates and the spell ends.</p>",
-          "chat": ""
-        },
-        "type": {
-          "value": "monster",
-          "subtype": ""
-        },
-        "activities": {},
-        "uses": {
-          "spent": 0,
-          "recovery": []
-        },
-        "advancement": [],
-        "identifier": "tether",
-        "source": {
-          "revision": 1,
-          "rules": "2024"
-        },
-        "crewed": false,
-        "enchant": {},
-        "prerequisites": {
-          "items": [],
-          "repeatable": false
-        },
-        "properties": [],
-        "requirements": ""
-      },
-      "_id": "nCNU6p9qeEbwlOYH",
-      "img": "systems/dnd5e/icons/svg/items/feature.svg",
-      "effects": [],
-      "folder": null,
-      "sort": 0,
-      "flags": {},
-      "_stats": {
-        "coreVersion": "13.351",
-        "systemId": "dnd5e",
-        "systemVersion": "5.2.5"
-      },
-      "ownership": {
-        "default": 0
-      },
-      "_key": "!actors.items!manifesttulpaA01.nCNU6p9qeEbwlOYH"
     }
   ],
   "effects": [],

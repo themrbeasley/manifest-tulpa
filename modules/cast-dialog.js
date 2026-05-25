@@ -48,7 +48,7 @@ class ManifestTulpaCastDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   async _prepareContext() {
     const grouped = {};
     for (const [slug, m] of Object.entries(MODIFICATIONS)) {
-      (grouped[m.category] ??= []).push({ slug, ...m });
+      (grouped[m.category] ??= []).push({ slug, ...m, isSelected: this.selected.has(slug) });
     }
     const used = this._slotsUsed();
     return {

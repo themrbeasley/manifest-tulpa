@@ -4,7 +4,28 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] — 2026-05-25
+
+> Addresses every actionable finding from the v0.1.3 smoke-test report ([docs/superpowers/test-plans/manifest-tulpa-test-report-2026-05-25.md](docs/superpowers/test-plans/manifest-tulpa-test-report-2026-05-25.md)). The runtime tests that were BLOCKED in that report (Sections 3–8) are now unblocked but still require live Foundry verification.
+
+### Fixed
+
+- **Cast dialog crashed on render with `Missing helper: "in"`.** `templates/cast-dialog.hbs` used a Handlebars `{{in}}` helper that doesn't exist in Foundry V13's Handlebars environment, so the entire modification-selection dialog failed before paint — taking the whole cast flow (stat adjustments, modification application, anchor AE, Relentless arming, initiative alignment, manifest animation, chat card) down with it. Fixed by pre-computing `isSelected` per modification in `_prepareContext` and checking `{{#if this.isSelected}}` in the template. Also patched a latent secondary bug: `selected` was never exposed in the context, so the `../../selected` lookup would have been undefined even if the helper existed.
+- **`module.json` `download` URL pinned to v0.1.0.** The in-repo manifest hard-coded `releases/download/v0.1.0/manifest-tulpa.zip`, so any user installing from the in-repo manifest (or any release where the CI rewrite step silently failed) would get the v0.1.0 zip regardless of advertised version. Switched the in-repo default to `releases/latest/download/manifest-tulpa.zip`. The release workflow's per-tag rewrite still produces version-specific URLs in published assets.
+- **Duplicate hook registration possible across module re-imports.** Added a `globalThis.__manifestTulpaHooksRegistered` guard in `modules/init.js` that survives module re-import while the Hooks event bus is still alive — prevents `dnd5e.postUseActivity`, `dnd5e.combatTurnStart`, `combatStart`, `deleteActiveEffect`, and `preDeleteToken` from accumulating listeners in dev/reload workflows.
+
+### Changed
+
+- **Spell range and target now match the RAW.** `manifest-tulpa.txt` specifies "Range: 30 feet" but the packed spell had `range.units: "self"` at both the spell level and the summon-activity level, meaning the Tulpa could be placed anywhere on the canvas. Set both to `value: 30, units: "ft"` with `override: true` on the summon activity so placement is actually constrained. Target type is now `space` (was `self`).
+- **Material component text matches the RAW.** `system.materials.value` now reads "(a crystal shard imbued with your psychic resonance, worth at least 100 GP)" to match `manifest-tulpa.txt`. Set `consumed: false` — the source text says "worth at least 100 GP" with no mention of consumption.
+
+### Removed
+
+- **Vestigial "Tether" feature on the Tulpa statblock.** A `Tether` feat ("If the Tulpa ends its turn more than 100 feet from its caster, it dissipates and the spell ends.") was present on the packed actor but is not in the spell text. Removed from `_source/manifest-tulpa-actors/Actor.tulpa.json` and from the `KEEP_ITEM_NAMES` allow-lists in both `scripts/scrub-source.mjs` and `scripts/validate-pack.js` so a re-scrub from the world export won't reintroduce it.
+
 ## [0.1.3] — 2026-05-25
+
+> **Known issue (fixed in 0.1.4):** the modification-selection dialog crashed on render due to a missing Handlebars helper, taking the entire cast flow down with it. See the v0.1.4 entry for the full fix list.
 
 ### Fixed
 
@@ -88,6 +109,7 @@ End-user manifest URL:
 https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.json
 ```
 
+[0.1.4]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.4
 [0.1.3]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.3
 [0.1.2]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.2
 [0.1.1]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.1
