@@ -175,4 +175,76 @@ export const MODIFICATIONS = {
       changes: [],
     }),
   },
+
+  ...Object.fromEntries(
+    ["acid","bludgeoning","cold","fire","lightning","necrotic","piercing","radiant","slashing","thunder"]
+      .map(dt => [`resistance_${dt}`, {
+        category: "resistance", slots: 1, kind: "ae",
+        template: aeTemplate({
+          name: `Damage Resistance: ${dt.charAt(0).toUpperCase()}${dt.slice(1)}`,
+          icon: "icons/svg/shield.svg",
+          changes: [{ key: "system.traits.dr.value", mode: 2, value: dt, priority: 20 }],
+        }),
+      }])
+  ),
+
+  flySpeed: {
+    category: "movement", slots: 1, kind: "ae",
+    template: aeTemplate({
+      name: "Fly Speed",
+      icon: "icons/svg/wing.svg",
+      changes: [{ key: "system.attributes.movement.fly", mode: 4, value: "@attributes.movement.walk", priority: 20 }],
+    }),
+  },
+  swimSpeed: {
+    category: "movement", slots: 1, kind: "ae",
+    template: aeTemplate({
+      name: "Swim Speed",
+      icon: "icons/svg/water.svg",
+      changes: [{ key: "system.attributes.movement.swim", mode: 4, value: "@attributes.movement.walk", priority: 20 }],
+    }),
+  },
+  spiderClimb: {
+    category: "movement", slots: 1, kind: "ae",
+    template: aeTemplate({
+      name: "Spider Climb",
+      icon: "icons/svg/up.svg",
+      changes: [],
+    }),
+  },
+  tremorsense: {
+    category: "movement", slots: 1, kind: "ae",
+    template: aeTemplate({
+      name: "Tremorsense",
+      icon: "icons/svg/eye.svg",
+      changes: [{ key: "system.attributes.senses.tremorsense", mode: 4, value: "30", priority: 20 }],
+    }),
+  },
+
+  ...Object.fromEntries(
+    ["acr","ani","arc","ath","dec","his","ins","itm","inv","med","nat","prc","prf","per","rel","slt","ste","sur"]
+      .map(skill => [`skill_${skill}`, {
+        category: "skill", slots: 1, kind: "ae",
+        template: aeTemplate({
+          name: `Skill Affinity: ${skill.toUpperCase()}`,
+          icon: "icons/svg/book.svg",
+          changes: [{ key: `system.skills.${skill}.value`, mode: 4, value: "1", priority: 20 }],
+        }),
+      }])
+  ),
+
+  telepathicLink: {
+    category: "special", slots: 1, kind: "ae",
+    template: aeTemplate({
+      name: "Telepathic Link",
+      icon: "icons/svg/sound.svg",
+      changes: [],
+    }),
+    postApply: async ({ caster, tulpa, castConfig }) => {
+      await caster.setFlag(MODULE_ID, "telepathicLink", true);
+      await tulpa.setFlag(MODULE_ID,  "telepathicLink", true);
+      const { postLinkOpen } = await import("./chat-cards.js");
+      await postLinkOpen({ caster, tulpa });
+    },
+  },
 };

@@ -130,3 +130,44 @@ test("relentless is a marker-only AE (no system changes) with the slug-visible n
   assert.deepEqual(m.template.changes, []);
   assert.equal(m.template.name, "Relentless");
 });
+
+test("ten resistance entries — one per spell-text damage type", () => {
+  const expected = ["acid","bludgeoning","cold","fire","lightning","necrotic","piercing","radiant","slashing","thunder"];
+  for (const dt of expected) {
+    const slug = `resistance_${dt}`;
+    assert.ok(MODIFICATIONS[slug], `${slug} missing`);
+    const c = MODIFICATIONS[slug].template.changes[0];
+    assert.equal(c.key, "system.traits.dr.value");
+    assert.equal(c.mode, 2);
+    assert.equal(c.value, dt);
+  }
+});
+
+test("movement entries UPGRADE the appropriate movement key", () => {
+  assert.equal(MODIFICATIONS.flySpeed.template.changes[0].key,  "system.attributes.movement.fly");
+  assert.equal(MODIFICATIONS.flySpeed.template.changes[0].mode, 4);
+  assert.equal(MODIFICATIONS.flySpeed.template.changes[0].value, "@attributes.movement.walk");
+  assert.equal(MODIFICATIONS.swimSpeed.template.changes[0].key, "system.attributes.movement.swim");
+  assert.equal(MODIFICATIONS.tremorsense.template.changes[0].key,   "system.attributes.senses.tremorsense");
+  assert.equal(MODIFICATIONS.tremorsense.template.changes[0].mode,  4);
+  assert.equal(MODIFICATIONS.tremorsense.template.changes[0].value, "30");
+  assert.ok(MODIFICATIONS.spiderClimb, "spiderClimb entry exists");
+});
+
+test("eighteen skill entries — one per dnd5e skill key", () => {
+  const SKILLS = ["acr","ani","arc","ath","dec","his","ins","itm","inv","med","nat","prc","prf","per","rel","slt","ste","sur"];
+  for (const skill of SKILLS) {
+    const slug = `skill_${skill}`;
+    assert.ok(MODIFICATIONS[slug], `${slug} missing`);
+    const c = MODIFICATIONS[slug].template.changes[0];
+    assert.equal(c.key, `system.skills.${skill}.value`);
+    assert.equal(c.mode, 4);
+    assert.equal(c.value, "1");
+  }
+});
+
+test("telepathicLink is an AE with a postApply hook", () => {
+  const m = MODIFICATIONS.telepathicLink;
+  assert.equal(m.kind, "ae");
+  assert.equal(typeof m.postApply, "function");
+});
