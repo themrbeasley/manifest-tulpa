@@ -1,0 +1,40 @@
+{
+  "MANIFEST_TULPA": {
+    "Dialog": {
+      "Title": "Manifest Tulpa — Configure Cast",
+      "DamageType": "Damage Type",
+      "Force": "Force",
+      "Radiant": "Radiant",
+      "Psychic": "Psychic",
+      "Modifications": "Modifications",
+      "SlotsUsed": "Slots used: {used} / {max}",
+      "Cancel": "Cancel",
+      "Confirm": "Manifest Tulpa",
+      "CategoryMorphic": "Morphic",
+      "CategoryCombat": "Combat",
+      "CategoryResistance": "Resistance",
+      "CategoryMovement": "Movement",
+      "CategorySkill": "Skill Affinity",
+      "CategorySpecial": "Special"
+    },
+    "Chat": {
+      "CastTitle": "Manifest Tulpa",
+      "CastSubtitle": "{caster} manifests a Tulpa.",
+      "DismissTitle": "Tulpa Dismissed",
+      "Reason": {
+        "duration": "the spell's duration ended",
+        "zeroHP": "the caster fell to 0 HP",
+        "isDeath": "the caster died",
+        "recast": "the caster recast the spell",
+        "manual": "the token was removed manually"
+      },
+      "Relentless": "{name} stands at 1 HP — Relentless triggers!",
+      "LinkOpen": "Telepathic Link established between {caster} and {tulpa}.",
+      "CancelWarning": "Cast aborted after slot was spent — restore manually if intended."
+    },
+    "Effect": {
+      "AnchorName": "Manifest Tulpa (active)",
+      "AnchorDescription": "Your Manifest Tulpa is active. Right-click and delete this effect to dismiss the Tulpa."
+    }
+  }
+}

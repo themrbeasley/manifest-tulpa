@@ -11,3 +11,10 @@ Thumbs.db
 
 # Local Claude Code settings (personal, not project-wide)
 .claude/settings.local.json
+
+# Foundry CLI build cache
+.foundryvtt-cli/
+
+# Test output
+coverage/
+.test-output/
