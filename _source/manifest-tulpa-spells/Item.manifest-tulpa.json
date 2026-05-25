@@ -83,7 +83,7 @@
             "count": "",
             "name": "",
             "_id": "HfBvmoaJJXJoq1vf",
-            "uuid": "Compendium.manifest-tulpa.manifest-tulpa-actors.Actor.manifesttulpa0001",
+            "uuid": "Compendium.manifest-tulpa.manifest-tulpa-actors.Actor.manifesttulpaA01",
             "level": {
               "min": null,
               "max": null
@@ -222,6 +222,6 @@
   "ownership": {
     "default": 0
   },
-  "_id": "manifesttulpaspell",
-  "_key": "!items!manifesttulpaspell"
+  "_id": "manifesttulpaS01",
+  "_key": "!items!manifesttulpaS01"
 }

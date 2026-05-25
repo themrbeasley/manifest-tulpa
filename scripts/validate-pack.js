@@ -17,12 +17,34 @@ const KEEP_ITEM_NAMES = new Set([
 
 function readJSON(p) { return JSON.parse(readFileSync(p, "utf8")); }
 
+// Foundry document IDs are exactly 16 alphanumeric characters; anything else is
+// rejected by DocumentIdField / fromUuid on load. v0.1.2 shipped 17- and 18-char
+// ids that loaded into the pack but failed validation when the summon activity's
+// profile UUID was parsed.
+const FOUNDRY_ID_RE = /^[a-zA-Z0-9]{16}$/;
+
+function checkId(errors, label, id) {
+  if (!FOUNDRY_ID_RE.test(id ?? "")) {
+    errors.push(`${label}._id must be exactly 16 alphanumeric chars (got "${id}")`);
+  }
+}
+
 export async function validateAll({ actorMutator, spellMutator } = {}) {
   const errors = [];
   const actor = readJSON(ACTOR_PATH);
   const spell = readJSON(SPELL_PATH);
   if (actorMutator) actorMutator(actor);
   if (spellMutator) spellMutator(spell);
+
+  // _id format checks (Foundry rejects anything that doesn't match /^[a-zA-Z0-9]{16}$/).
+  checkId(errors, "actor", actor._id);
+  for (const e of actor.effects ?? []) checkId(errors, `actor.effects[${e.name}]`, e._id);
+  for (const i of actor.items ?? []) {
+    checkId(errors, `actor.items[${i.name}]`, i._id);
+    for (const e of i.effects ?? []) checkId(errors, `actor.items[${i.name}].effects[${e.name}]`, e._id);
+  }
+  checkId(errors, "spell", spell._id);
+  for (const e of spell.effects ?? []) checkId(errors, `spell.effects[${e.name}]`, e._id);
 
   // _key checks — foundryvtt-cli silently skips docs without _key, producing empty packs.
   const expectedActorKey = `!actors!${actor._id}`;

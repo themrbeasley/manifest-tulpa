@@ -24,7 +24,11 @@ const KEEP_ITEM_NAMES = new Set([
 ]);
 
 // Stable packed actor _id — used by the spell's summon profile UUID after scrub.
-const PACKED_ACTOR_ID = "manifesttulpa0001";
+// Foundry document IDs MUST be exactly 16 alphanumeric characters; v0.1.0–v0.1.2
+// used a 17-char id ("manifesttulpa0001") which loaded into the pack but failed
+// validation the moment the summon activity's profile UUID was parsed.
+const PACKED_ACTOR_ID = "manifesttulpaA01";
+const PACKED_SPELL_ID = "manifesttulpaS01";
 
 function stripFlags(doc) {
   for (const k of WORLD_FLAGS) delete doc.flags?.[k];
@@ -98,7 +102,7 @@ function scrubActor() {
 
 function scrubSpell() {
   const s = JSON.parse(readFileSync(SPELL_SRC, "utf8"));
-  s._id = "manifesttulpaspell";
+  s._id = PACKED_SPELL_ID;
 
   // Pull RAW spell text in.
   const raw = readFileSync(SPELL_TXT, "utf8");

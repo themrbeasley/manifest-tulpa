@@ -46,3 +46,27 @@ test("validateAll fails when spell is missing _key", async () => {
   assert.equal(ok, false);
   assert.ok(errors.some(e => /spell\._key/.test(e)));
 });
+
+test("validateAll fails when actor _id is not 16 alphanumeric chars (v0.1.2 regression)", async () => {
+  const { ok, errors } = await validateAll({
+    actorMutator: doc => { doc._id = "manifesttulpa0001"; }, // 17 chars
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /actor\._id.*16 alphanumeric/.test(e)));
+});
+
+test("validateAll fails when spell _id is not 16 alphanumeric chars", async () => {
+  const { ok, errors } = await validateAll({
+    spellMutator: doc => { doc._id = "manifesttulpaspell"; }, // 18 chars
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /spell\._id.*16 alphanumeric/.test(e)));
+});
+
+test("validateAll fails when an embedded item _id is non-alphanumeric", async () => {
+  const { ok, errors } = await validateAll({
+    actorMutator: doc => { doc.items[0]._id = "has-a-hyphen-bad"; }, // 16 chars but contains '-'
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /actor\.items.*16 alphanumeric/.test(e)));
+});

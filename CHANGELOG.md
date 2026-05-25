@@ -4,7 +4,15 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-05-25
+
+### Fixed
+
+- **Spell crashed dnd5e/midi-qol validation when dragged onto a character sheet.** v0.1.2 used document `_id`s `manifesttulpa0001` (17 chars) and `manifesttulpaspell` (18 chars). Foundry's pack loader was lenient enough to accept them, but `DocumentIdField` and `fromUuid` both require exactly 16 alphanumeric characters — so the moment the spell's summon-activity profile UUID was parsed, validation threw `Invalid document ID "manifesttulpa0001"`. Fixed by renaming the actor's id to `manifesttulpaA01` and the spell's id to `manifesttulpaS01` (both 16 chars). Validator now asserts every `_id` (top-level and embedded) matches `/^[a-zA-Z0-9]{16}$/`, with regression tests for actor / spell / embedded item.
+
 ## [0.1.2] — 2026-05-25
+
+> **Known issue (fixed in 0.1.3):** the actor's `_id` was 17 characters and the spell's was 18 — Foundry's UUID validator rejects anything other than exactly 16 alphanumeric characters, so dragging the spell onto a character sheet threw `Invalid document ID`.
 
 ### Fixed
 
@@ -80,6 +88,7 @@ End-user manifest URL:
 https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.json
 ```
 
+[0.1.3]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.3
 [0.1.2]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.2
 [0.1.1]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.1
 [0.1.0]: https://github.com/themrbeasley/manifest-tulpa/releases/tag/v0.1.0
