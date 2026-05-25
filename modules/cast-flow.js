@@ -3,7 +3,7 @@ import { MODULE_ID, NS, ANCHOR_AE_NAME, ANCHOR_DURATION_SECONDS } from "./consta
 import { openCastDialog } from "./cast-dialog.js";
 import { postCast, postWarning } from "./chat-cards.js";
 import { playManifest } from "./animations.js";
-import { armRelentlessWatcher } from "./relentless-watcher.js";
+import { armTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 import { alignTulpaInitiative } from "./initiative.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
@@ -25,8 +25,14 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   const availableSlots = Math.min(6, 2 + Math.max(0, slotLevel - 5));
 
   // Trigger #4 — if a previous anchor exists, delete it first (dismisses the previous Tulpa).
+  // Tag the dismissReason before delete so the dismiss-flow chat card credits "recast"
+  // instead of falling through to the generic "manual" inference. v0.1.6 shipped this
+  // path without the tag and recasts mis-reported as manual.
   const previous = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid"));
-  if (previous) await previous.delete();
+  if (previous) {
+    await previous.setFlag(MODULE_ID, "dismissReason", "recast");
+    await previous.delete();
+  }
 
   const selection = await openCastDialog({ availableSlots });
   // From here on the Tulpa is on the canvas; any abort must clean it up to avoid orphans.
@@ -67,10 +73,9 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   // Step 4: caster-side anchor AE.
   await createAnchorAE(caster, tulpa, castConfig);
 
-  // Step 5: Relentless watcher (registered by Task 13 module).
-  if (castConfig.modifications.includes("relentless")) {
-    armRelentlessWatcher(tulpa.uuid, castConfig.damageType);
-  }
+  // Step 5: Tulpa HP watcher — always armed. Handles both Relentless clamp (when the
+  // mod is selected and unused) and zero-HP dismissal cascade (otherwise).
+  armTulpaHpWatcher(tulpa.uuid, castConfig, castConfig.damageType);
 
   // Step 6: shared initiative.
   if (game.combat) {
@@ -190,15 +195,13 @@ async function applyModifications(tulpa, caster, castConfig) {
   }
 
   // 4: aura+marker (Harrowing Presence).
-  // The aura is what Aura Effects propagates to in-range hostiles; the marker payload
-  // (inHarrowingAura flag + auraDC) is what the combat-turn hook reads. Merge marker flags
-  // onto the aura so propagated copies carry them. The exact applied-effect slot in
-  // Aura Effects 1.5.2 needs Foundry-side smoke verification — see smoke test step "Harrowing Presence".
+  // Aura Effects 1.5.2 propagates the aura's `changes` array onto in-range targets as
+  // the marker payload — the registry encodes the marker flags into `aura.changes` so
+  // `actor.getFlag(MODULE_ID, "inHarrowingAura")` resolves on the target's prepared data.
+  // No separate marker AE is needed; the v0.1.6 markerOnApply path never propagated.
   const auraMods = chosen.filter(x => x.kind === "aura+marker");
   for (const m of auraMods) {
-    const { aura, markerOnApply } = m.build(caster, castConfig.damageType);
-    aura.flags = foundry.utils.mergeObject(aura.flags ?? {}, markerOnApply.flags ?? {});
-    if (aura.system) aura.system.appliedEffect = markerOnApply;
+    const { aura } = m.build(caster, castConfig.damageType);
     await tulpa.createEmbeddedDocuments("ActiveEffect", [aura]);
   }
 
@@ -219,6 +222,12 @@ async function abortAndCleanup(token, message) {
 }
 
 async function createAnchorAE(caster, tulpa, castConfig) {
+  // Store tulpaTokenId + tulpaSceneId alongside tulpaUuid so the dismiss flow can fall
+  // back to a scene+token lookup when `fromUuid(tulpaUuid)` returns null. Synthetic
+  // (token-tied) actor UUIDs can resolve to null at dismiss time if the token was already
+  // deleted or the scene wasn't current — v0.1.6's dismiss handler silently no-op'd
+  // when fromUuid failed, leaving orphaned tokens after duration/zeroHP/isDeath.
+  const tulpaTokenDoc = tulpa.token ?? tulpa.getActiveTokens()[0]?.document ?? null;
   await caster.createEmbeddedDocuments("ActiveEffect", [{
     name: ANCHOR_AE_NAME,
     img: caster.items.find(i => i.system?.identifier === SPELL_IDENTIFIER)?.img
@@ -228,7 +237,12 @@ async function createAnchorAE(caster, tulpa, castConfig) {
     transfer: false,
     description: game.i18n.localize("MANIFEST_TULPA.Effect.AnchorDescription"),
     flags: {
-      [MODULE_ID]: { tulpaUuid: tulpa.uuid, castConfig },
+      [MODULE_ID]: {
+        tulpaUuid: tulpa.uuid,
+        tulpaTokenId: tulpaTokenDoc?.id ?? null,
+        tulpaSceneId: tulpaTokenDoc?.parent?.id ?? null,
+        castConfig,
+      },
       dae: { specialDuration: ["zeroHP", "isDeath"], showIcon: false },
     },
   }]);

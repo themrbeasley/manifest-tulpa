@@ -1,7 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { onPostUseActivity } from "./cast-flow.js";
-import { onCombatStart } from "./initiative.js";
-import { restoreRelentlessWatchers } from "./relentless-watcher.js";
+import { onCombatStart, onUpdateCombatant } from "./initiative.js";
+import { restoreTulpaHpWatchers } from "./tulpa-hp-watcher.js";
 import { onCombatTurnStart } from "./harrowing-presence-hook.js";
 import { onDeleteActiveEffect, onPreDeleteToken } from "./dismiss-flow.js";
 
@@ -19,7 +19,8 @@ Hooks.once("ready", async () => {
   Hooks.on("dnd5e.postUseActivity",  onPostUseActivity);
   Hooks.on("dnd5e.combatTurnStart",  onCombatTurnStart);
   Hooks.on("combatStart",            onCombatStart);
+  Hooks.on("updateCombatant",        onUpdateCombatant);
   Hooks.on("deleteActiveEffect",     onDeleteActiveEffect);
   Hooks.on("preDeleteToken",         onPreDeleteToken);
-  await restoreRelentlessWatchers();
+  await restoreTulpaHpWatchers();
 });

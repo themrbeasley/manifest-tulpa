@@ -148,12 +148,21 @@ export const MODIFICATIONS = {
     category: "combat", slots: 1, kind: "aura+marker",
     build: (caster, damageType) => {
       const dc = caster.system?.attributes?.spell?.dc ?? caster.system?.attributes?.spelldc ?? 10;
+      // Aura Effects 1.5.2 propagates the aura's `changes` array onto in-range targets
+      // as the marker effect. The `flags.manifest-tulpa.*` reads the combatTurnStart hook
+      // performs (via `actor.getFlag`) resolve against applied AE changes, so the flags
+      // must live in `changes` — not in a separate marker `flags` block, which Aura
+      // Effects does not propagate. v0.1.6 shipped the flags-only layout and the hook
+      // never saw them.
       return {
         aura: {
           name: "Harrowing Presence (Aura)",
           img: "icons/svg/aura.svg",
           type: "auraeffects.aura",
-          changes: [],
+          changes: [
+            { key: `flags.${MODULE_ID}.inHarrowingAura`, mode: 5, value: "true", priority: 20 },
+            { key: `flags.${MODULE_ID}.auraDC`,          mode: 5, value: String(dc), priority: 20 },
+          ],
           disabled: false,
           transfer: false,
           duration: { seconds: ANCHOR_DURATION_SECONDS },
@@ -167,16 +176,6 @@ export const MODIFICATIONS = {
             script: "true",
           },
           flags: { [MODULE_ID]: { auraDC: dc, source: "modification" } },
-        },
-        markerOnApply: {
-          name: "In Harrowing Presence",
-          img: "icons/svg/terror.svg",
-          changes: [],
-          disabled: false,
-          transfer: false,
-          flags: {
-            [MODULE_ID]: { inHarrowingAura: true, auraDC: dc },
-          },
         },
       };
     },

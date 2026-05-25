@@ -1,7 +1,7 @@
 import { MODULE_ID } from "./constants.js";
 import { postDismiss } from "./chat-cards.js";
 import { playDismiss, endAuraEffect } from "./animations.js";
-import { unarmRelentlessWatcher } from "./relentless-watcher.js";
+import { unarmTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 
 /**
  * deleteActiveEffect hook — fires when the caster-side anchor AE is removed for any reason.
@@ -12,22 +12,35 @@ export async function onDeleteActiveEffect(effect /*, options, userId */) {
   if (!tulpaUuid) return; // only anchors carry this flag
   const castConfig = effect.getFlag(MODULE_ID, "castConfig") ?? {};
   const caster = effect.parent;
+  const tokenId = effect.getFlag?.(MODULE_ID, "tulpaTokenId");
+  const sceneId = effect.getFlag?.(MODULE_ID, "tulpaSceneId");
+
   const tulpa = await fromUuid(tulpaUuid);
+  // Synthetic-actor UUIDs (Scene.X.Token.Y.Actor.Z) can resolve to null at dismiss
+  // time when the token or its scene isn't loaded. Fall back to the anchor-stored
+  // scene+token ids so duration/zeroHP/isDeath dismissals never orphan the token.
+  const fallbackToken = (!tulpa && sceneId && tokenId)
+    ? game.scenes?.get(sceneId)?.tokens?.get(tokenId) ?? null
+    : null;
+  if (!tulpa && !fallbackToken) {
+    console.debug(`${MODULE_ID} | dismiss: could not resolve tulpa (uuid=${tulpaUuid}, scene=${sceneId}, token=${tokenId})`);
+  }
 
   const reason = inferReason(effect);
   const skipTokenTeardown = effect.getFlag?.(MODULE_ID, "skipTokenTeardown") === true;
 
   // Tear down in-memory watchers first.
-  unarmRelentlessWatcher(tulpaUuid);
+  unarmTulpaHpWatcher(tulpaUuid);
   endAuraEffect(tulpaUuid);
 
   // If trigger #5 fired, Foundry is already deleting the token — skip the second teardown
   // (double-delete throws and the animation would render against a tearing-down token).
   if (!skipTokenTeardown) {
-    const token = tulpa?.getActiveTokens()[0];
-    if (token) {
-      if (castConfig.damageType) await playDismiss(token, castConfig.damageType);
-      try { await token.document.delete(); }
+    const tokenDoc = tulpa?.getActiveTokens()[0]?.document ?? fallbackToken;
+    if (tokenDoc) {
+      const placeable = tokenDoc.object;
+      if (placeable && castConfig.damageType) await playDismiss(placeable, castConfig.damageType);
+      try { await tokenDoc.delete(); }
       catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
     }
   }

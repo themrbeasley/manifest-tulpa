@@ -70,3 +70,27 @@ test("validateAll fails when an embedded item _id is non-alphanumeric", async ()
   assert.equal(ok, false);
   assert.ok(errors.some(e => /actor\.items.*16 alphanumeric/.test(e)));
 });
+
+test("validateAll fails when Manifestation Strike has no Attack activity (v0.1.6 regression)", async () => {
+  const { ok, errors } = await validateAll({
+    actorMutator: doc => {
+      for (const it of doc.items) if (it.name === "Manifestation Strike") it.system.activities = {};
+    },
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /at least one Attack activity/.test(e)));
+});
+
+test("validateAll fails when a Manifestation Strike attack activity has no damage.parts", async () => {
+  const { ok, errors } = await validateAll({
+    actorMutator: doc => {
+      for (const it of doc.items) if (it.name === "Manifestation Strike") {
+        for (const a of Object.values(it.system.activities)) {
+          if (a.type === "attack") a.damage = { parts: [] };
+        }
+      }
+    },
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some(e => /must have damage\.parts/.test(e)));
+});

@@ -78,7 +78,20 @@ export async function validateAll({ actorMutator, spellMutator } = {}) {
   }
   for (const it of actor.items ?? []) {
     if (!/^Manifestation Strike/.test(it.name)) continue;
-    for (const act of Object.values(it.system?.activities ?? {})) {
+    // v0.1.6 shipped a stale LevelDB pack where the Manifestation Strike weapon
+    // had no activities. The _source JSON was correct; the pack was missed by
+    // build:packs. Assert presence here so the regression cannot recur.
+    const acts = Object.values(it.system?.activities ?? {});
+    const attackActs = acts.filter(a => a.type === "attack");
+    if (attackActs.length < 1) {
+      errors.push(`actor.items[${it.name}] must have at least one Attack activity (found ${attackActs.length})`);
+    }
+    for (const act of attackActs) {
+      if (!(act.damage?.parts?.length > 0)) {
+        errors.push(`actor.items[${it.name}].activities[${act._id ?? act.name ?? "?"}] must have damage.parts`);
+      }
+    }
+    for (const act of acts) {
       for (const p of act.damage?.parts ?? []) {
         if ((p.types ?? []).some(t => ["force","radiant","psychic"].includes(t))) {
           errors.push(`Manifestation Strike damage type must be a placeholder, not a final type`);

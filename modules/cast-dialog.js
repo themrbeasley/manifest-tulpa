@@ -12,6 +12,16 @@ const CATEGORY_LABEL = {
   special:    "MANIFEST_TULPA.Dialog.CategorySpecial",
 };
 
+function prettifySlug(slug) {
+  // camelCase → "Camel Case"; snake_case → "Snake Case".
+  return String(slug)
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
 /**
  * @returns Promise<{damageType, modifications: string[]} | null>  resolves to null on cancel
  */
@@ -48,7 +58,15 @@ class ManifestTulpaCastDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   async _prepareContext() {
     const grouped = {};
     for (const [slug, m] of Object.entries(MODIFICATIONS)) {
-      (grouped[m.category] ??= []).push({ slug, ...m, isSelected: this.selected.has(slug) });
+      // Pretty display name — prefer the AE/item name when the registry encodes one,
+      // otherwise turn the slug into Title Case so e.g. `empoweredStrikes` becomes
+      // "Empowered Strikes". v0.1.6 surfaced raw slugs in the picker.
+      const displayName = m.template?.name ?? m.item?.name ?? prettifySlug(slug);
+      (grouped[m.category] ??= []).push({
+        slug, ...m,
+        displayName,
+        isSelected: this.selected.has(slug),
+      });
     }
     const used = this._slotsUsed();
     return {

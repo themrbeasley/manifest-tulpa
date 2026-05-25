@@ -7,9 +7,12 @@ import { MODULE_ID } from "./constants.js";
  */
 export async function onCombatTurnStart(actor /*, combat, combatant */) {
   if (!actor) return;
-  const marker = actor.effects.find(e => e.getFlag?.(MODULE_ID, "inHarrowingAura"));
-  if (!marker) return;
-  const dc = marker.getFlag(MODULE_ID, "auraDC");
+  // The Harrowing Presence aura applies its `changes` onto in-range targets via Aura
+  // Effects, writing `flags.manifest-tulpa.inHarrowingAura` and `auraDC` onto the actor.
+  // Read via `actor.getFlag` so we hit the prepared (post-AE-application) data, not a
+  // raw marker AE that v0.1.6 expected but never created.
+  if (!actor.getFlag?.(MODULE_ID, "inHarrowingAura")) return;
+  const dc = Number(actor.getFlag(MODULE_ID, "auraDC"));
   if (!Number.isFinite(dc)) return;
 
   // dnd5e 5.2.5: `rollSavingThrow` returns an Array<D20Roll> (one per advantage/disadvantage

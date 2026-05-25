@@ -12,7 +12,7 @@
 
 - Open the browser console. Expected: two log lines `manifest-tulpa | init` and `manifest-tulpa | ready`.
 
-## Regression checks (v0.1.4 → v0.1.6)
+## Regression checks (v0.1.4 → v0.1.7)
 
 Run these before the full smoke test. Each verifies a specific fix from the per-version patch sets. See [CHANGELOG.md](../../../CHANGELOG.md) and the corresponding test reports for full context.
 
@@ -20,7 +20,7 @@ Run these before the full smoke test. Each verifies a specific fix from the per-
 
 | # | Check | Why |
 |---|---|---|
-| R1 | Open the spell card on the PC sheet. Material component reads "(a crystal shard imbued with your psychic resonance, worth at least 100 GP)" and is **not** marked consumed. Range shows "30 ft." | Materials text + range matched to `manifest-tulpa.txt` RAW. |
+| R1 | Open the spell card on the PC sheet. Material component reads "a crystal shard imbued with your psychic resonance, worth at least 100 GP" with **one** set of parentheses (added by dnd5e's display formatter) and is **not** marked consumed. Range shows "30 ft." | Materials text + range matched to `manifest-tulpa.txt` RAW (outer parens stripped in v0.1.7 UX 3). |
 | R2 | Open the Tulpa actor sheet (drag from the Actors compendium). Features tab shows **Manifestation Strike** only — **no "Tether" feat**. | Vestigial Tether feat removed. |
 | R3 | Cast Manifest Tulpa. After the dnd5e slot dialog, the placement crosshair / template appears bounded to within 30 feet of the caster (placing outside the radius is rejected by dnd5e's summon UI). | Summon-activity range now `30 ft` with `override: true`. |
 | R4 | Cast dialog opens after placement **without** a console error. Console must NOT contain `Missing helper: "in"`, `Failed to render Application "manifest-tulpa-cast-dialog"`, or `Template part "body" must render a single HTML element`. | `{{in}}` helper bug fixed (v0.1.4); template single-root wrap added (v0.1.5). |
@@ -41,14 +41,27 @@ The sole v0.1.5 fix (cast-dialog single-root template wrap) is already covered b
 | R10 | After confirming the dialog, the Tulpa sheet shows: **AC = 13 + caster spellcasting mod**, **HP = 40 + 5 × caster level** (both max and current), **Spellcasting Ability** set to the caster's, **Spell DC** matching the caster's, **CR** matching the caster's proficiency bonus (prof 2→CR 1, 3→5, 4→9, 5→13, 6→17). | New `applyCasterStats` step bakes caster-derived stats onto the spawned actor. |
 | R11 | Cast with **Harrowing Presence** + place a hostile NPC in range, then start combat. On the NPC's turn-start, a Wis save posts to chat. Console must NOT contain a `TypeError` from `harrowing-presence-hook.js`. | `rollSavingThrow` return-shape (Array<D20Roll> \| single roll \| null) is normalized and wrapped in try/catch. |
 
-If R4 or R6 fails, **stop** and re-open the most recent test report's Section 2 — the cast flow is the gate to every downstream test.
+### v0.1.7 fixes — [test report](manifest-tulpa-test-report-v0.1.6.md)
+
+| # | Check | Why |
+|---|---|---|
+| R12 | Cast Manifest Tulpa, place the token, confirm the dialog. Open the spawned Tulpa's Manifestation Strike. **Both melee and ranged Attack activities exist** with `2d8 + @mod` damage. The selected damage type is set on each. Combat use rolls to-hit + damage successfully. | Bug 5: validator (`scripts/validate-pack.js`) now asserts every actor weapon item carries ≥1 Attack activity with non-empty `damage.parts`; release build can no longer ship a stale LevelDB pack lacking activities. |
+| R13 | Cast with **Harrowing Presence** + a hostile NPC inside the 10-ft ring. Inspect the NPC's active effects (Active Effects tab). A marker AE propagated by Aura Effects carries `flags.manifest-tulpa.inHarrowingAura = true` and `flags.manifest-tulpa.auraDC = <caster spell DC>`. Start combat; on the NPC's turn-start the Wis save posts and `frightened` applies on fail. | Bug 6: aura AE's `changes` array now holds the two flag changes Aura Effects 1.5.2 propagates; the hook reads them via `actor.getFlag` post-application. |
+| R14 | Roll a combat. Cast Manifest Tulpa mid-combat. The Tulpa is **added to the combat tracker** automatically and lands at `caster initiative − 0.01` (immediately after the caster). Re-roll the caster's initiative; the Tulpa re-aligns within one tick. | Bug 7: `alignTulpaInitiative` now inserts the combatant if missing, and a new `updateCombatant` hook re-aligns Tulpa rows whenever the caster's row updates. |
+| R15 | Cast, then immediately re-cast. The old Tulpa's dismissal chat card reads "**Tulpa Dismissed: recast**" (NOT "duration ended"). The new Tulpa spawns with fresh stats. | Bug 8: cast-flow tags the previous anchor with `dismissReason: "recast"` before deleting it, so `inferReason` no longer falls through to "duration". |
+| R16 | Cast **without** Relentless. Deal damage that drops the Tulpa to 0 HP. The Tulpa is dismissed within one tick: token removed, anchor AE on caster gone, "Tulpa Dismissed: zeroHP" chat card posts. | Bug 9: `tulpa-hp-watcher.js` now arms on every cast (not just Relentless casts) and tags + deletes the anchor when the Tulpa's HP reaches 0 after Relentless is unavailable or already consumed. |
+| R17 | Cast Relentless again. Deal lethal damage twice. First hit → HP clamps to 1, Relentless chat + flag set. Second lethal hit → Tulpa dismissed (zeroHP path), token removed within one tick. | Bug 9: same watcher handles the post-Relentless drop in a single funnel. |
+| R18 | Cast, then mark the caster as dead (HP→0 or toggle the Dead status). DAE's `specialDuration` removes the anchor AE; the Tulpa token is removed within one tick and an "isDeath" dismissal chat card posts even though the synthetic actor UUID has gone stale. | Bug 10: anchor AE now stores `tulpaTokenId` + `tulpaSceneId` so `onDeleteActiveEffect` can fall back to `scene.tokens.get(id)` when `fromUuid(tulpaUuid)` returns null. |
+| R19 | Open the cast dialog. Every modification checkbox shows a **human-readable label** (e.g. "Reinforced Form", "Skill Affinity: Stealth", "Size Shift: Large") — no raw camelCase or snake_case slugs like `reinforcedForm` or `skill_ste`. | UX 1: `_prepareContext` precomputes `displayName` from the AE/item name with a `prettifySlug` fallback. |
+
+If R4, R6, R12, or R13 fails, **stop** and re-open the most recent test report — the cast flow + weapon + aura are the gates to every downstream test.
 
 ## Cast flow happy path (verifies Tasks 10, 11)
 
 1. Cast Manifest Tulpa at slot 5.
 2. Slot dialog appears → submit. Slot is consumed.
 3. **Tulpa appears on canvas with the actor template's flat baseline** (AC 13, HP 40, no spellcasting ability). Placement is bounded to within 30 ft of the caster (see R3). The caster-derived stats are applied in step 6 after the cast dialog confirms.
-4. Cast dialog opens. Radio shows force/radiant/psychic; checkboxes are grouped by category.
+4. Cast dialog opens. Radio shows force/radiant/psychic; checkboxes are grouped by category and each label is human-readable (see R19).
 5. Pick **psychic**, **Reinforced Form**, **Vital Surge**. Slot counter shows 2/2. Confirm.
 6. Tulpa sheet now shows:
    - **AC** = `13 + caster spellcasting mod + 2` (Reinforced Form adds +2 on top of the `applyCasterStats` baseline).
@@ -77,15 +90,15 @@ For each pair below, cast → confirm → inspect the Tulpa:
 
 1. Cast with **Harrowing Presence** + **psychic**.
 2. Place a hostile NPC within 10ft of the Tulpa. Confirm the Aura Effects ring is visible (subtle magenta tint at 0.25 opacity).
-3. The NPC should immediately gain a marker AE that carries `flags["manifest-tulpa"].inHarrowingAura = true` and `auraDC` (numeric). **Inspect the AE on the NPC and verify both flags are present** — Aura Effects 1.5.2's applied-effect schema slot (`system.appliedEffect` vs. another key) was not verified outside Foundry; if the flags are missing on the NPC, the marker propagation needs to be re-wired in [modules/cast-flow.js](../../../modules/cast-flow.js) under "aura+marker" in `applyModifications`.
-4. Start a combat. On the NPC's turn-start, a Wis save roll posts to chat against your spell save DC.
+3. The NPC should immediately gain a marker AE propagated by Aura Effects 1.5.2 carrying both `flags.manifest-tulpa.inHarrowingAura = true` and `flags.manifest-tulpa.auraDC = <caster spell DC>`. **Inspect the AE on the NPC and verify both flags are present** (Active Effects tab). These flags live in the aura AE's `changes` array on the Tulpa side — see [modules/modification-registry.js](../../../modules/modification-registry.js) `harrowingPresence.build`.
+4. Start a combat. On the NPC's turn-start, a Wis save roll posts to chat against your spell save DC (the hook reads `auraDC` via `actor.getFlag`).
 5. On failure: NPC gets `frightened` status; auto-clears at the start of its NEXT turn (times-up).
 6. Move the NPC out of range; marker AE disappears within the next auraeffects pulse.
 
 ## Shared initiative (verifies Task 12)
 
-1. Cast during active combat. Roll the caster's initiative. Confirm the Tulpa enters the tracker at caster's initiative - 0.01 (directly after).
-2. End combat. Cast again. Start combat. Roll initiative. Confirm Tulpa initiative re-aligns.
+1. Cast during active combat. Confirm the Tulpa is auto-added to the combat tracker (see R14) and lands at caster's initiative - 0.01 (directly after).
+2. End combat. Cast again. Start combat. Roll the caster's initiative. Confirm Tulpa initiative re-aligns within one tick via the `updateCombatant` hook.
 
 ## Relentless (verifies Task 13)
 
@@ -101,9 +114,9 @@ For each, perform the action then verify the anchor AE, the Tulpa token, and a "
 | # | Action | Reason in chat |
 |---|---|---|
 | 1 | Wait 1 hour of game-world time (use `game.time.advance(3600)`) | duration |
-| 2 | Deal damage equal to caster HP | zeroHP |
-| 3 | Toggle caster dead status | isDeath |
-| 4 | Re-cast Manifest Tulpa | recast |
+| 2 | Deal damage equal to the **Tulpa's** HP (with Relentless absent or already consumed — see R16/R17) | zeroHP |
+| 3 | Toggle caster dead status (see R18 for stale-UUID fallback) | isDeath |
+| 4 | Re-cast Manifest Tulpa (see R15) | recast |
 | 5 | Right-click → delete the Tulpa token | manual |
 
 ## Session reload (verifies the startup scan in Task 13 / 15)

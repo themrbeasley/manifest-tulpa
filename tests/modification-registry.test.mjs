@@ -120,7 +120,7 @@ test("multiattack inserts a feat item the player triggers manually", () => {
   assert.match(m.item.system.description.value, /two Manifestation Strike/);
 });
 
-test("harrowingPresence.build returns aura + markerOnApply with caster spell save DC baked in", () => {
+test("harrowingPresence.build returns an aura whose changes propagate marker flags", () => {
   const m = MODIFICATIONS.harrowingPresence;
   assert.equal(m.kind, "aura+marker");
   const fakeCaster = { system: { attributes: { spell: { dc: 17 } } }, name: "Vex" };
@@ -131,9 +131,19 @@ test("harrowingPresence.build returns aura + markerOnApply with caster spell sav
   assert.equal(built.aura.system.applyToSelf, false);
   assert.equal(built.aura.system.showRadius, true);
   assert.equal(built.aura.system.script, "true");
-  // The marker payload that Aura Effects will stamp onto in-range hostiles:
-  assert.equal(built.markerOnApply.flags["manifest-tulpa"].inHarrowingAura, true);
-  assert.equal(built.markerOnApply.flags["manifest-tulpa"].auraDC, 17);
+  // Aura Effects 1.5.2 propagates `changes` to in-range targets; the marker flags must
+  // live there (not in a separate marker AE that v0.1.6 expected but never propagated).
+  const changeKeys = built.aura.changes.map(c => c.key).sort();
+  assert.deepEqual(changeKeys, [
+    "flags.manifest-tulpa.auraDC",
+    "flags.manifest-tulpa.inHarrowingAura",
+  ]);
+  const dcChange = built.aura.changes.find(c => c.key === "flags.manifest-tulpa.auraDC");
+  assert.equal(dcChange.value, "17");
+  assert.equal(dcChange.mode, 5);
+  const flagChange = built.aura.changes.find(c => c.key === "flags.manifest-tulpa.inHarrowingAura");
+  assert.equal(flagChange.value, "true");
+  assert.equal(flagChange.mode, 5);
 });
 
 test("relentless is a marker-only AE (no system changes) with the slug-visible name", () => {
