@@ -103,4 +103,76 @@ export const MODIFICATIONS = {
       changes: [{ key: "system.traits.size", mode: 5, value: "grg", priority: 30 }],
     }),
   },
+  empoweredStrikes: {
+    category: "combat", slots: 1, kind: "item-patch",
+    patch: (strike, damageType) => {
+      const parts = globalThis.foundry?.utils?.deepClone
+        ? globalThis.foundry.utils.deepClone(strike.system.damage.parts)
+        : structuredClone(strike.system.damage.parts);
+      parts.push({ number: 1, denomination: 8, bonus: "", types: [damageType], custom: { enabled: false, formula: "" }, scaling: { mode: "", number: null, formula: "" } });
+      return { "system.damage.parts": parts };
+    },
+  },
+  multiattack: {
+    category: "combat", slots: 1, kind: "item-insert",
+    item: {
+      name: "Multiattack",
+      type: "feat",
+      img: "icons/svg/sword.svg",
+      system: {
+        description: {
+          value: "<p>The Tulpa makes two Manifestation Strike attacks when it takes the Attack action.</p>",
+          chat: "",
+        },
+        type: { value: "monster", subtype: "" },
+        activation: { type: "action" },
+      },
+      flags: { [MODULE_ID]: { source: "modification" } },
+    },
+  },
+  harrowingPresence: {
+    category: "combat", slots: 1, kind: "aura+marker",
+    build: (caster, damageType) => {
+      const dc = caster.system?.attributes?.spell?.dc ?? caster.system?.attributes?.spelldc ?? 10;
+      return {
+        aura: {
+          name: "Harrowing Presence (Aura)",
+          img: "icons/svg/aura.svg",
+          type: "auraeffects.aura",
+          changes: [],
+          disabled: false,
+          transfer: false,
+          duration: { seconds: ANCHOR_DURATION_SECONDS },
+          system: {
+            distanceFormula: "10",
+            disposition: -1,
+            applyToSelf: false,
+            showRadius: true,
+            color: PRESETS[damageType].auraTint,
+            opacity: 0.25,
+            script: "true",
+          },
+          flags: { [MODULE_ID]: { auraDC: dc, source: "modification" } },
+        },
+        markerOnApply: {
+          name: "In Harrowing Presence",
+          img: "icons/svg/terror.svg",
+          changes: [],
+          disabled: false,
+          transfer: false,
+          flags: {
+            [MODULE_ID]: { inHarrowingAura: true, auraDC: dc },
+          },
+        },
+      };
+    },
+  },
+  relentless: {
+    category: "combat", slots: 1, kind: "ae",
+    template: aeTemplate({
+      name: "Relentless",
+      icon: "icons/svg/regen.svg",
+      changes: [],
+    }),
+  },
 };

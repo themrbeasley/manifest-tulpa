@@ -86,3 +86,47 @@ test("each size shift OVERRIDEs system.traits.size with the correct dnd5e size c
     assert.equal(c.value, sizeCode);
   }
 });
+
+test("empoweredStrikes patches a strike item to add 1d8 of the chosen damage type", () => {
+  const m = MODIFICATIONS.empoweredStrikes;
+  assert.equal(m.kind, "item-patch");
+  const update = m.patch({
+    system: { damage: { parts: [{ number: 1, denomination: 8, types: ["force"] }] } },
+  }, "psychic");
+  // The patch must return a diff that adds a new damage part with 1d8 psychic.
+  const newParts = update["system.damage.parts"] ?? update.system?.damage?.parts;
+  assert.ok(Array.isArray(newParts) && newParts.length >= 2, "expected an added 1d8 part");
+  const added = newParts.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("psychic"));
+  assert.ok(added, "1d8 psychic part missing");
+});
+
+test("multiattack inserts a feat item the player triggers manually", () => {
+  const m = MODIFICATIONS.multiattack;
+  assert.equal(m.kind, "item-insert");
+  assert.equal(m.item.type, "feat");
+  assert.equal(m.item.name, "Multiattack");
+  assert.match(m.item.system.description.value, /two Manifestation Strike/);
+});
+
+test("harrowingPresence.build returns aura + markerOnApply with caster spell save DC baked in", () => {
+  const m = MODIFICATIONS.harrowingPresence;
+  assert.equal(m.kind, "aura+marker");
+  const fakeCaster = { system: { attributes: { spell: { dc: 17 } } }, name: "Vex" };
+  const built = m.build(fakeCaster, "psychic");
+  assert.equal(built.aura.type, "auraeffects.aura");
+  assert.equal(built.aura.system.distanceFormula, "10");
+  assert.equal(built.aura.system.disposition, -1);
+  assert.equal(built.aura.system.applyToSelf, false);
+  assert.equal(built.aura.system.showRadius, true);
+  assert.equal(built.aura.system.script, "true");
+  // The marker payload that Aura Effects will stamp onto in-range hostiles:
+  assert.equal(built.markerOnApply.flags["manifest-tulpa"].inHarrowingAura, true);
+  assert.equal(built.markerOnApply.flags["manifest-tulpa"].auraDC, 17);
+});
+
+test("relentless is a marker-only AE (no system changes) with the slug-visible name", () => {
+  const m = MODIFICATIONS.relentless;
+  assert.equal(m.kind, "ae");
+  assert.deepEqual(m.template.changes, []);
+  assert.equal(m.template.name, "Relentless");
+});
