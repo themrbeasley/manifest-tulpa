@@ -1,5 +1,6 @@
 import { MODULE_ID } from "./constants.js";
 import { onPostUseActivity } from "./cast-flow.js";
+import { onCombatStart } from "./initiative.js";
 
 Hooks.once("init", () => {
   console.log(`${MODULE_ID} | init`);
@@ -8,4 +9,5 @@ Hooks.once("init", () => {
 Hooks.once("ready", () => {
   console.log(`${MODULE_ID} | ready`);
   Hooks.on("dnd5e.postUseActivity", onPostUseActivity);
+  Hooks.on("combatStart", onCombatStart);
 });
