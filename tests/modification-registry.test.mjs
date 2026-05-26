@@ -12,7 +12,7 @@ test("every entry has category, slots (positive int), kind, and a payload matchi
     assert.ok(Number.isInteger(m.slots) && m.slots > 0, `${slug} has invalid slots`);
     assert.ok(KINDS.includes(m.kind), `${slug} has unknown kind ${m.kind}`);
     if (m.kind === "ae")          assert.ok(m.template, `${slug} kind=ae missing template`);
-    if (m.kind === "item-patch")  assert.equal(typeof m.patch, "function", `${slug} kind=item-patch missing patch fn`);
+    if (m.kind === "item-patch")  assert.equal(typeof m.patchActivity, "function", `${slug} kind=item-patch missing patchActivity fn`);
     if (m.kind === "item-insert") assert.ok(m.item, `${slug} kind=item-insert missing item`);
     if (m.kind === "aura+marker") assert.equal(typeof m.build, "function", `${slug} kind=aura+marker missing build fn`);
   }
@@ -87,29 +87,22 @@ test("each size shift OVERRIDEs system.traits.size with the correct dnd5e size c
   }
 });
 
-test("empoweredStrikes patches every strike activity to add 1d8 of the chosen damage type", () => {
+test("empoweredStrikes.patchActivity appends a 1d8 of the chosen damage type to a parts array", () => {
   const m = MODIFICATIONS.empoweredStrikes;
   assert.equal(m.kind, "item-patch");
-  // dnd5e 5.2.5 stores damage entries inside each activity's `damage.parts`.
-  const strike = {
-    system: {
-      activities: {
-        melee01: { damage: { parts: [{ number: 2, denomination: 8, bonus: "@mod", types: ["bludgeoning"] }] } },
-        ranged1: { damage: { parts: [{ number: 2, denomination: 8, bonus: "@mod", types: ["bludgeoning"] }] } },
-      },
-    },
-  };
-  const update = m.patch(strike, "psychic");
-  for (const actId of ["melee01", "ranged1"]) {
-    const newParts = update[`system.activities.${actId}.damage.parts`];
-    assert.ok(Array.isArray(newParts) && newParts.length >= 2,
-      `expected ${actId} to gain a 1d8 damage entry`);
-    const added = newParts.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("psychic"));
-    assert.ok(added, `${actId} missing the new 1d8 psychic part`);
-    // Existing bludgeoning entry must be preserved.
-    const original = newParts.find(p => (p.types ?? []).includes("bludgeoning"));
-    assert.ok(original, `${actId} lost its original bludgeoning entry`);
-  }
+  // v0.1.9 reshaped the modification: it no longer reads/writes the full strike item.
+  // cast-flow.js `applyStrikeChanges` reads each activity's parts and feeds them through
+  // each item-patch modification's `patchActivity({parts, damageType})` — the modification
+  // just returns the transformed parts array. See modification-registry.js scar comment.
+  const parts = [{ number: 2, denomination: 8, bonus: "@mod", types: ["bludgeoning"] }];
+  const next = m.patchActivity({ parts, damageType: "psychic" });
+  assert.ok(Array.isArray(next) && next.length === 2, "expected one new entry appended");
+  const added = next.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("psychic"));
+  assert.ok(added, "missing the new 1d8 psychic part");
+  const original = next.find(p => (p.types ?? []).includes("bludgeoning"));
+  assert.ok(original, "lost the original bludgeoning entry");
+  // Must not mutate the input array — applyStrikeChanges relies on a new array each call.
+  assert.equal(parts.length, 1, "patchActivity mutated its input parts array");
 });
 
 test("multiattack inserts a feat item the player triggers manually", () => {
@@ -164,14 +157,22 @@ test("harrowingPresence.build ships the full Aura Effects 1.5.2 schema (v0.1.7 b
   assert.deepEqual(built.aura.system.stashedStatuses, []);
 });
 
-test("empoweredStrikes.patch iterates ActivityCollection (Map) — v0.1.7 bug A regression", () => {
+test("iterActivities + patchActivity compose to patch every activity — v0.1.7 bug A regression", () => {
   // dnd5e 5.2.5 ships `ActivityCollection extends Map`; v0.1.7 used `Object.entries()`
-  // which returns [] on Maps and silently no-op'd the +1d8.
+  // which returns [] on Maps and silently no-op'd the +1d8. v0.1.9 split the work:
+  // `iterActivities` walks the Map, `patchActivity` transforms each parts array. This
+  // mirrors the loop in cast-flow.js `applyStrikeChanges` so the integration stays guarded.
   const activities = new Map();
   activities.set("melee01", { damage: { parts: [{ number: 2, denomination: 8, types: ["bludgeoning"] }] } });
   activities.set("ranged1", { damage: { parts: [{ number: 2, denomination: 8, types: ["bludgeoning"] }] } });
-  const strike = { system: { activities } };
-  const update = MODIFICATIONS.empoweredStrikes.patch(strike, "fire");
+  const update = {};
+  for (const [actId, act] of iterActivities(activities)) {
+    const next = MODIFICATIONS.empoweredStrikes.patchActivity({
+      parts: act.damage.parts,
+      damageType: "fire",
+    });
+    update[`system.activities.${actId}.damage.parts`] = next;
+  }
   for (const actId of ["melee01", "ranged1"]) {
     const parts = update[`system.activities.${actId}.damage.parts`];
     assert.ok(Array.isArray(parts), `${actId} missing in update`);
