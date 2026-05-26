@@ -6,6 +6,17 @@ import { MODULE_ID, ANCHOR_DURATION_SECONDS, SIZE_TOKEN_SCALE } from "./constant
 
 export const KINDS = ["ae", "item-patch", "item-insert", "aura+marker"];
 
+// In dnd5e 5.2.5 `item.system.activities` is an `ActivityCollection` (extends Map).
+// `Object.entries()` on a Map returns [] because Map entries are not own enumerable
+// string-keyed properties — v0.1.7 shipped that pattern and the dialog's damage type
+// + Empowered Strikes both silently no-op'd. Iterate via the Map protocol when present,
+// fall back to Object.entries for plain-object test fixtures. v0.1.8 scar.
+export function iterActivities(activities) {
+  if (!activities) return [];
+  if (typeof activities.entries === "function") return [...activities.entries()];
+  return Object.entries(activities);
+}
+
 function aeTemplate({ name, icon, changes, flags = {}, statuses = [] }) {
   return {
     name,
@@ -111,8 +122,7 @@ export const MODIFICATIONS = {
     patch: (strike, damageType) => {
       const clone = globalThis.foundry?.utils?.deepClone ?? structuredClone;
       const update = {};
-      const activities = strike?.system?.activities ?? {};
-      for (const [actId, act] of Object.entries(activities)) {
+      for (const [actId, act] of iterActivities(strike?.system?.activities)) {
         const parts = clone(act.damage?.parts ?? []);
         parts.push({
           number: 1,
@@ -154,6 +164,13 @@ export const MODIFICATIONS = {
       // must live in `changes` — not in a separate marker `flags` block, which Aura
       // Effects does not propagate. v0.1.6 shipped the flags-only layout and the hook
       // never saw them.
+      // Aura Effects 1.5.2 `auraeffects.aura` data model: every system field below has a
+      // schema-defined default, but in v0.1.7 we shipped a minimal subset and Aura Effects
+      // never propagated the marker (visual rendered, but in-range tokens never received
+      // the changes). Comparing against a manually-authored aura in the same world
+      // (`fvtt-ActiveEffect-harrowing-presence.json` at repo root) revealed the missing
+      // pieces — most critically `collisionTypes: ["move"]`, without which Aura Effects
+      // doesn't run a proximity check on any token event. v0.1.8 ships the full schema.
       return {
         aura: {
           name: "Harrowing Presence (Aura)",
@@ -174,6 +191,15 @@ export const MODIFICATIONS = {
             color: PRESETS[damageType].auraTint,
             opacity: 0.25,
             script: "true",
+            collisionTypes: ["move"],
+            canStack: false,
+            combatOnly: false,
+            disableOnHidden: true,
+            evaluatePreApply: false,
+            overrideName: "",
+            bestFormula: "",
+            stashedChanges: [],
+            stashedStatuses: [],
           },
           flags: { [MODULE_ID]: { auraDC: dc, source: "modification" } },
         },
@@ -235,15 +261,24 @@ export const MODIFICATIONS = {
   },
 
   ...Object.fromEntries(
-    ["acr","ani","arc","ath","dec","his","ins","itm","inv","med","nat","prc","prf","per","rel","slt","ste","sur"]
-      .map(skill => [`skill_${skill}`, {
-        category: "skill", slots: 1, kind: "ae",
-        template: aeTemplate({
-          name: `Skill Affinity: ${skill.toUpperCase()}`,
-          icon: "icons/svg/book.svg",
-          changes: [{ key: `system.skills.${skill}.value`, mode: 4, value: "1", priority: 20 }],
-        }),
-      }])
+    // 3-letter codes are dnd5e's `CONFIG.DND5E.skills` keys; the picker showed raw codes
+    // (e.g. "Skill Affinity: STE") in v0.1.7. Map to full English names for display.
+    // Lookup-table-fallback to `code.toUpperCase()` keeps the picker readable if a future
+    // skill key gets added without a matching label entry.
+    Object.entries({
+      acr: "Acrobatics", ani: "Animal Handling", arc: "Arcana",      ath: "Athletics",
+      dec: "Deception",  his: "History",         ins: "Insight",     itm: "Intimidation",
+      inv: "Investigation", med: "Medicine",     nat: "Nature",      prc: "Perception",
+      prf: "Performance",   per: "Persuasion",   rel: "Religion",    slt: "Sleight of Hand",
+      ste: "Stealth",       sur: "Survival",
+    }).map(([skill, fullName]) => [`skill_${skill}`, {
+      category: "skill", slots: 1, kind: "ae",
+      template: aeTemplate({
+        name: `Skill Affinity: ${fullName}`,
+        icon: "icons/svg/book.svg",
+        changes: [{ key: `system.skills.${skill}.value`, mode: 4, value: "1", priority: 20 }],
+      }),
+    }])
   ),
 
   telepathicLink: {

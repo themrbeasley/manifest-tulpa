@@ -1,4 +1,4 @@
-import { MODIFICATIONS } from "./modification-registry.js";
+import { MODIFICATIONS, iterActivities } from "./modification-registry.js";
 import { MODULE_ID, NS, ANCHOR_AE_NAME, ANCHOR_DURATION_SECONDS } from "./constants.js";
 import { openCastDialog } from "./cast-dialog.js";
 import { postCast, postWarning } from "./chat-cards.js";
@@ -120,8 +120,10 @@ async function setStrikeDamageType(tulpa, damageType) {
   if (!strike) return;
   // dnd5e 5.2.5 stores attack damage inside each activity's `damage.parts`.
   // `system.damage.base` exists on the weapon but has empty `types` on this template.
+  // `activities` is an `ActivityCollection` (Map) — iterate via `iterActivities` not
+  // `Object.entries`, which returns [] on Maps (v0.1.7 bug A scar).
   const update = {};
-  for (const [actId, act] of Object.entries(strike.system?.activities ?? {})) {
+  for (const [actId, act] of iterActivities(strike.system?.activities)) {
     const parts = foundry.utils.deepClone(act.damage?.parts ?? []);
     if (!parts.length) continue;
     parts[0].types = [damageType];

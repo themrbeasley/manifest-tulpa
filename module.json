@@ -2,7 +2,7 @@
   "id": "manifest-tulpa",
   "title": "Manifest Tulpa",
   "description": "Adds the 5th-level Conjuration spell 'Manifest Tulpa' with full automation: cast dialog, modification picker, summon wiring, in-combat behaviors, and lifecycle management.",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "authors": [{ "name": "themrbeasley" }],
   "compatibility": { "minimum": "13", "verified": "13.351" },
   "esmodules": ["modules/init.js"],

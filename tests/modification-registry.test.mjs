@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MODIFICATIONS, KINDS } from "../modules/modification-registry.js";
+import { MODIFICATIONS, KINDS, iterActivities } from "../modules/modification-registry.js";
 
 test("KINDS enumerates the four kinds documented in the spec", () => {
   assert.deepEqual(KINDS.sort(), ["ae", "aura+marker", "item-insert", "item-patch"]);
@@ -144,6 +144,77 @@ test("harrowingPresence.build returns an aura whose changes propagate marker fla
   const flagChange = built.aura.changes.find(c => c.key === "flags.manifest-tulpa.inHarrowingAura");
   assert.equal(flagChange.value, "true");
   assert.equal(flagChange.mode, 5);
+});
+
+test("harrowingPresence.build ships the full Aura Effects 1.5.2 schema (v0.1.7 bug B regression)", () => {
+  const built = MODIFICATIONS.harrowingPresence.build(
+    { system: { attributes: { spell: { dc: 15 } } } },
+    "psychic",
+  );
+  // collisionTypes: ["move"] is the smoking-gun field — without it Aura Effects never
+  // runs the proximity check on token movement and the marker never lands.
+  assert.deepEqual(built.aura.system.collisionTypes, ["move"]);
+  assert.equal(built.aura.system.canStack, false);
+  assert.equal(built.aura.system.combatOnly, false);
+  assert.equal(built.aura.system.disableOnHidden, true);
+  assert.equal(built.aura.system.evaluatePreApply, false);
+  assert.equal(built.aura.system.overrideName, "");
+  assert.equal(built.aura.system.bestFormula, "");
+  assert.deepEqual(built.aura.system.stashedChanges, []);
+  assert.deepEqual(built.aura.system.stashedStatuses, []);
+});
+
+test("empoweredStrikes.patch iterates ActivityCollection (Map) — v0.1.7 bug A regression", () => {
+  // dnd5e 5.2.5 ships `ActivityCollection extends Map`; v0.1.7 used `Object.entries()`
+  // which returns [] on Maps and silently no-op'd the +1d8.
+  const activities = new Map();
+  activities.set("melee01", { damage: { parts: [{ number: 2, denomination: 8, types: ["bludgeoning"] }] } });
+  activities.set("ranged1", { damage: { parts: [{ number: 2, denomination: 8, types: ["bludgeoning"] }] } });
+  const strike = { system: { activities } };
+  const update = MODIFICATIONS.empoweredStrikes.patch(strike, "fire");
+  for (const actId of ["melee01", "ranged1"]) {
+    const parts = update[`system.activities.${actId}.damage.parts`];
+    assert.ok(Array.isArray(parts), `${actId} missing in update`);
+    const added = parts.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("fire"));
+    assert.ok(added, `${actId} did not gain the +1d8 fire entry`);
+  }
+});
+
+test("iterActivities handles Map, plain object, null, and undefined", () => {
+  // Plain object (test fixture shape)
+  const obj = { a: { x: 1 }, b: { x: 2 } };
+  const fromObj = iterActivities(obj);
+  assert.equal(fromObj.length, 2);
+  assert.equal(fromObj[0][0], "a");
+
+  // Map (runtime ActivityCollection shape)
+  const map = new Map([["k1", { x: 1 }], ["k2", { x: 2 }]]);
+  const fromMap = iterActivities(map);
+  assert.equal(fromMap.length, 2);
+  assert.equal(fromMap[0][0], "k1");
+
+  // Falsy values
+  assert.deepEqual(iterActivities(null), []);
+  assert.deepEqual(iterActivities(undefined), []);
+});
+
+test("skill modifications use full English names (v0.1.7 bug C regression — no raw STE/PRC codes)", () => {
+  // Spot-check the previously-cryptic abbreviations; if these read as full words the
+  // dialog picker is no longer showing 3-letter codes.
+  assert.equal(MODIFICATIONS.skill_ste.template.name, "Skill Affinity: Stealth");
+  assert.equal(MODIFICATIONS.skill_prc.template.name, "Skill Affinity: Perception");
+  assert.equal(MODIFICATIONS.skill_slt.template.name, "Skill Affinity: Sleight of Hand");
+  assert.equal(MODIFICATIONS.skill_ani.template.name, "Skill Affinity: Animal Handling");
+  assert.equal(MODIFICATIONS.skill_itm.template.name, "Skill Affinity: Intimidation");
+  // No skill entry should contain a 3-letter all-caps code (the v0.1.7 symptom).
+  const allCapsCode = /\b[A-Z]{3}\b/;
+  for (const slug of Object.keys(MODIFICATIONS)) {
+    if (!slug.startsWith("skill_")) continue;
+    assert.ok(
+      !allCapsCode.test(MODIFICATIONS[slug].template.name),
+      `${slug} still shows a raw 3-letter code: "${MODIFICATIONS[slug].template.name}"`,
+    );
+  }
 });
 
 test("relentless is a marker-only AE (no system changes) with the slug-visible name", () => {

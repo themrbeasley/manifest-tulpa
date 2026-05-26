@@ -40,8 +40,16 @@ export async function onDeleteActiveEffect(effect /*, options, userId */) {
     if (tokenDoc) {
       const placeable = tokenDoc.object;
       if (placeable && castConfig.damageType) await playDismiss(placeable, castConfig.damageType);
-      try { await tokenDoc.delete(); }
-      catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
+      // times-up race (v0.1.7 cosmetic bug D): when the duration trigger fires, times-up
+      // and this funnel both race to delete the Tulpa token. The second delete throws
+      // `EmbeddedCollection.get: undefined id does not exist`. Check the token is still
+      // in its scene's collection before calling delete — eliminates the noisy console
+      // error without affecting any other dismissal trigger.
+      const stillPresent = tokenDoc.parent?.tokens?.get?.(tokenDoc.id) === tokenDoc;
+      if (stillPresent) {
+        try { await tokenDoc.delete(); }
+        catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
+      }
     }
   }
 

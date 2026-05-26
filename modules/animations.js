@@ -20,10 +20,24 @@ function withTimeout(promise, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+// Sequencer.Database.entryExists is the cheap pre-flight: when the jb2a asset isn't
+// indexed (no Patreon module, asset misnamed, etc.) we can skip the Sequence entirely
+// and avoid the full 5s timeout wait that v0.1.7's smoke report flagged as a UX papercut.
+// Returns false only when the database is loaded *and* the entry is confirmed missing —
+// any other state (DB not ready, function absent) returns true so we still attempt the
+// play and fall back to the timeout safety net.
+function assetAvailable(asset) {
+  const db = globalThis.Sequencer?.Database;
+  if (typeof db?.entryExists !== "function") return true;
+  try { return db.entryExists(asset) !== false; }
+  catch { return true; }
+}
+
 export async function playManifest(token, damageType) {
   if (!globalThis.Sequencer) return;
   const p = PRESETS[damageType];
   if (!p) return;
+  if (!assetAvailable(p.manifest.asset)) return;
   try {
     await withTimeout(
       new Sequence()
@@ -43,6 +57,7 @@ export async function playDismiss(token, damageType) {
   if (!globalThis.Sequencer) return;
   const p = PRESETS[damageType];
   if (!p) return;
+  if (!assetAvailable(p.dismiss.asset)) return;
   try {
     await withTimeout(
       new Sequence()
@@ -63,6 +78,7 @@ export async function playRelentless(token, damageType) {
   if (!globalThis.Sequencer) return;
   const p = PRESETS[damageType];
   if (!p) return;
+  if (!assetAvailable(p.impact.asset)) return;
   try {
     await withTimeout(
       new Sequence()

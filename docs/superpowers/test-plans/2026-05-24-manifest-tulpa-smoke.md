@@ -12,7 +12,7 @@
 
 - Open the browser console. Expected: two log lines `manifest-tulpa | init` and `manifest-tulpa | ready`.
 
-## Regression checks (v0.1.4 → v0.1.7)
+## Regression checks (v0.1.4 → v0.1.8)
 
 Run these before the full smoke test. Each verifies a specific fix from the per-version patch sets. See [CHANGELOG.md](../../../CHANGELOG.md) and the corresponding test reports for full context.
 
@@ -54,7 +54,17 @@ The sole v0.1.5 fix (cast-dialog single-root template wrap) is already covered b
 | R18 | Cast, then mark the caster as dead (HP→0 or toggle the Dead status). DAE's `specialDuration` removes the anchor AE; the Tulpa token is removed within one tick and an "isDeath" dismissal chat card posts even though the synthetic actor UUID has gone stale. | Bug 10: anchor AE now stores `tulpaTokenId` + `tulpaSceneId` so `onDeleteActiveEffect` can fall back to `scene.tokens.get(id)` when `fromUuid(tulpaUuid)` returns null. |
 | R19 | Open the cast dialog. Every modification checkbox shows a **human-readable label** (e.g. "Reinforced Form", "Skill Affinity: Stealth", "Size Shift: Large") — no raw camelCase or snake_case slugs like `reinforcedForm` or `skill_ste`. | UX 1: `_prepareContext` precomputes `displayName` from the AE/item name with a `prettifySlug` fallback. |
 
-If R4, R6, R12, or R13 fails, **stop** and re-open the most recent test report — the cast flow + weapon + aura are the gates to every downstream test.
+### v0.1.8 fixes — [test report](2026-05-25-v0.1.7-smoke-report.md)
+
+| # | Check | Why |
+|---|---|---|
+| R20 | Cast Manifest Tulpa with a damage type other than bludgeoning (e.g. **radiant**) and pick **Empowered Strikes**. Open the spawned Tulpa's Manifestation Strike. The first damage entry on each activity reads `2d8 radiant` (not bludgeoning), and a **second** entry `1d8 radiant` is present on both melee and ranged. | Bug A: `setStrikeDamageType` + `empoweredStrikes.patch` now iterate `ActivityCollection` via the Map protocol (shared `iterActivities` helper); `Object.entries()` returned `[]` on Maps in v0.1.7 and both paths silently no-op'd. |
+| R21 | Cast with **Harrowing Presence** + place a hostile NPC inside the 10-ft ring. Within one Aura Effects pulse (move the NPC 1 square if needed), inspect the NPC's Active Effects tab: a marker effect propagated by Aura Effects carries `flags.manifest-tulpa.inHarrowingAura = true` and `flags.manifest-tulpa.auraDC = <caster spell DC>`. Start combat; the Wis save fires on the NPC's turn-start. | Bug B: aura template now ships the full Aura Effects 1.5.2 `system` schema — most critically `collisionTypes: ["move"]`, without which Aura Effects 1.5.2 never registers the proximity check that drives propagation. R13 covered code-level field presence; R21 verifies *runtime* propagation. |
+| R22 | Open the cast dialog. Every Skill Affinity entry shows a **full English skill name** ("Stealth", "Perception", "Sleight of Hand", "Animal Handling") — **no** 3-letter all-caps codes (STE, PRC, SLT, ANI). | Bug C: dynamic skill loop now maps 3-letter `CONFIG.DND5E.skills` codes to full names via lookup table with `code.toUpperCase()` fallback. |
+| R23 | Cast and wait out the 1-hour duration via `game.time.advance(3601)`. Token and anchor AE both disappear within one tick. **Console must NOT contain** `EmbeddedCollection.get: undefined id [...] does not exist`. | Bug D: dismiss-flow now checks the token is still present in `tokenDoc.parent.tokens` before calling delete — eliminates the times-up race noise. |
+| R24 | Disable jb2a_patreon (or temporarily rename a manifest asset in Sequencer's database) and cast Manifest Tulpa. The cast chat card posts **within one tick** (not after the 5-second timeout). Dismiss the Tulpa; same fast path. Console may show a single Sequencer warning but no `manifest animation timed out` errors. | Bug E: `assetAvailable()` pre-flight in animations.js uses `Sequencer.Database.entryExists` to skip the Sequence entirely when the asset is confirmed missing, avoiding the full 5-second timeout wait. |
+
+If R4, R6, R12, R13, or R21 fails, **stop** and re-open the most recent test report — the cast flow + weapon + aura are the gates to every downstream test.
 
 ## Cast flow happy path (verifies Tasks 10, 11)
 
