@@ -42,9 +42,7 @@
         "id": "auraeffects",
         "type": "module",
         "compatibility": { "minimum": "1.5.2" }
-      }
-    ],
-    "recommends": [
+      },
       { "id": "autoanimations", "type": "module" },
       { "id": "jb2a_patreon", "type": "module" }
     ]
