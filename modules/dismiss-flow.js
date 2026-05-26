@@ -44,13 +44,21 @@ export async function onDeleteActiveEffect(effect, options /*, userId */) {
     const tokenDoc = tulpa?.getActiveTokens()[0]?.document ?? fallbackToken;
     if (tokenDoc) {
       const placeable = tokenDoc.object;
-      if (placeable && castConfig.damageType) await playDismiss(placeable, castConfig.damageType);
+      // v0.1.10 scar (smoke-report Bug 2): an animation asset that fails to resolve at
+      // playback time used to throw out of `playDismiss`, skipping the token delete and
+      // leaving the Tulpa on the canvas. Wrap in try/finally so the delete *always*
+      // runs even if Sequencer/JB2A barfs on a missing asset variant.
+      try {
+        if (placeable && castConfig.damageType) await playDismiss(placeable, castConfig.damageType);
+      } catch (err) {
+        console.warn(`${MODULE_ID} | dismiss animation failed:`, err);
+      }
       // times-up race (v0.1.7 cosmetic bug D): when the duration trigger fires, times-up
       // and this funnel both race to delete the Tulpa token. The second delete throws
-      // `EmbeddedCollection.get: undefined id does not exist`. Check the token is still
-      // in its scene's collection before calling delete — eliminates the noisy console
-      // error without affecting any other dismissal trigger.
-      const stillPresent = tokenDoc.parent?.tokens?.get?.(tokenDoc.id) === tokenDoc;
+      // `EmbeddedCollection.get: undefined id does not exist`. Use the collection's
+      // `.has(id)` membership check — the v0.1.9 identity check (`get(id) === tokenDoc`)
+      // false-negatived after Foundry re-instantiated the document, skipping the delete.
+      const stillPresent = tokenDoc.parent?.tokens?.has?.(tokenDoc.id) === true;
       if (stillPresent) {
         try { await tokenDoc.delete(); }
         catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
@@ -89,8 +97,10 @@ export async function onPreDeleteToken(tokenDoc) {
 //   2. anchor flag dismissReason — legacy path; v0.1.8 wrote this via awaited setFlag.
 //      Kept for backward compat with anchors created before this fix.
 //   3. caster has the `dead` status → "isDeath" (DAE specialDuration `isDeath` trigger).
-//   4. caster HP ≤ 0 → "zeroHP" (DAE specialDuration `zeroHP` trigger; lang text reads
-//      "the caster fell to 0 HP").
+//   4. caster HP ≤ 0 → "casterZeroHP" (DAE specialDuration `zeroHP` trigger).
+//      v0.1.9 returned the literal "zeroHP" here, conflating it with the Tulpa-zeroHP
+//      cascade dismissal (which is also tagged "zeroHP" in v0.1.9). v0.1.10 splits the
+//      two so the chat card can speak truthfully about which actor fell.
 //   5. anchor duration exhausted → "duration" (times-up deletes the AE on expiry).
 //   6. Otherwise "manual" — caller is most likely the GM right-clicking the AE icon.
 //      v0.1.8 fell back to "duration" here, which mislabeled GM-driven removals.
@@ -101,7 +111,7 @@ function inferReason(effect, options, caster) {
   if (tagged) return tagged;
   if (caster?.statuses?.has?.("dead")) return "isDeath";
   const casterHp = caster?.system?.attributes?.hp?.value;
-  if (typeof casterHp === "number" && casterHp <= 0) return "zeroHP";
+  if (typeof casterHp === "number" && casterHp <= 0) return "casterZeroHP";
   const remaining = effect.duration?.remaining;
   if (remaining != null && remaining <= 0) return "duration";
   return "manual";

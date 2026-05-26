@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MODIFICATIONS, KINDS, iterActivities } from "../modules/modification-registry.js";
+import { MODIFICATIONS, KINDS, iterActivities, buildStrikeParts } from "../modules/modification-registry.js";
 
 test("KINDS enumerates the four kinds documented in the spec", () => {
   assert.deepEqual(KINDS.sort(), ["ae", "aura+marker", "item-insert", "item-patch"]);
@@ -264,4 +264,95 @@ test("telepathicLink is an AE with a postApply hook", () => {
   const m = MODIFICATIONS.telepathicLink;
   assert.equal(m.kind, "ae");
   assert.equal(typeof m.postApply, "function");
+});
+
+// ---------------------------------------------------------------------------
+// buildStrikeParts — v0.1.10 scar (smoke-report Bug 1).
+// dnd5e 5.2.5's DamageData.types is a Set. v0.1.9 ran the parts array through
+// foundry.utils.deepClone, which degrades Set into a plain {0: "..."} object,
+// and DamageData then silently rejected the entire update. These tests pin the
+// pure helper against every shape `types` can arrive in.
+// ---------------------------------------------------------------------------
+
+test("buildStrikeParts: Set-typed `types` is coerced to a plain array", () => {
+  const parts = [{ number: 1, denomination: 8, types: new Set(["bludgeoning"]) }];
+  const next = buildStrikeParts(parts, "radiant");
+  assert.equal(next.length, 1);
+  assert.ok(Array.isArray(next[0].types), "types must be a plain array post-build");
+  assert.deepEqual(next[0].types, ["radiant"]);
+});
+
+test("buildStrikeParts: array-typed `types` is also normalized", () => {
+  const parts = [{ number: 1, denomination: 8, types: ["bludgeoning"] }];
+  const next = buildStrikeParts(parts, "psychic");
+  assert.ok(Array.isArray(next[0].types));
+  assert.deepEqual(next[0].types, ["psychic"]);
+});
+
+test("buildStrikeParts: object-typed `types` (deepClone degradation shape) is recovered", () => {
+  // Simulates the v0.1.9 deepClone output: Set → {0: "bludgeoning"}.
+  const parts = [{ number: 1, denomination: 8, types: { 0: "bludgeoning" } }];
+  const next = buildStrikeParts(parts, "force");
+  assert.deepEqual(next[0].types, ["force"]);
+});
+
+test("buildStrikeParts: missing `types` becomes [damageType] (Part 0 override is unconditional)", () => {
+  const parts = [{ number: 1, denomination: 8 }];
+  const next = buildStrikeParts(parts, "psychic");
+  assert.deepEqual(next[0].types, ["psychic"]);
+});
+
+test("buildStrikeParts: only Part 0 is forced to the damage type — Part 1+ keep their types", () => {
+  // Empowered Strikes appends a Part 1 the registry has already typed; the helper
+  // must not clobber it (otherwise the secondary die would inherit Part 0's type
+  // when the patch transformer doesn't explicitly set its own).
+  const parts = [
+    { number: 2, denomination: 8, types: new Set(["bludgeoning"]) },
+    { number: 1, denomination: 6, types: new Set(["fire"]) },
+  ];
+  const next = buildStrikeParts(parts, "radiant");
+  assert.deepEqual(next[0].types, ["radiant"]);
+  assert.deepEqual(next[1].types, ["fire"]);
+});
+
+test("buildStrikeParts: empty parts array stays empty (no spurious Part 0)", () => {
+  assert.deepEqual(buildStrikeParts([], "force"), []);
+});
+
+test("buildStrikeParts: undefined / null parts produce []", () => {
+  assert.deepEqual(buildStrikeParts(undefined, "force"), []);
+  assert.deepEqual(buildStrikeParts(null, "force"), []);
+});
+
+test("buildStrikeParts: item-patches run in order on a fresh-types array (Empowered Strikes integration)", () => {
+  const parts = [{ number: 2, denomination: 8, types: new Set(["bludgeoning"]) }];
+  const next = buildStrikeParts(parts, "psychic", [MODIFICATIONS.empoweredStrikes]);
+  assert.equal(next.length, 2, "empoweredStrikes should append Part 1");
+  assert.deepEqual(next[0].types, ["psychic"]);
+  // Part 1 from empoweredStrikes is also a 1d8 of the chosen damage type.
+  const added = next.find(p => p.number === 1 && p.denomination === 8 && (p.types ?? []).includes("psychic"));
+  assert.ok(added, "missing the appended 1d8 psychic part");
+});
+
+test("buildStrikeParts: respects DataModel parts that expose toObject()", () => {
+  // Simulates a `DataModel` instance: enumerable iteration via toObject() not spread.
+  const original = {
+    number: 1,
+    denomination: 8,
+    bonus: "@mod",
+    types: new Set(["bludgeoning"]),
+    toObject() {
+      return { number: this.number, denomination: this.denomination, bonus: this.bonus, types: [...this.types] };
+    },
+  };
+  const next = buildStrikeParts([original], "radiant");
+  assert.equal(next[0].bonus, "@mod");
+  assert.deepEqual(next[0].types, ["radiant"]);
+});
+
+test("buildStrikeParts: does not mutate its input parts array", () => {
+  const parts = [{ number: 1, denomination: 8, types: new Set(["bludgeoning"]) }];
+  buildStrikeParts(parts, "radiant", [MODIFICATIONS.empoweredStrikes]);
+  assert.equal(parts.length, 1, "input array was mutated");
+  assert.ok(parts[0].types instanceof Set, "input part's types Set was clobbered");
 });

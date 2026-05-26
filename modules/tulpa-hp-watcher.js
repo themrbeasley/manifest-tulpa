@@ -7,7 +7,9 @@ import { playRelentless } from "./animations.js";
 // has `dae.specialDuration: ["zeroHP"]`, but DAE's zeroHP fires when the *actor that
 // owns the AE* hits 0 (i.e. the caster), not when a referenced actor hits 0. So we
 // always arm a watcher on the Tulpa and either clamp (Relentless) or delete the
-// caster's anchor with dismissReason="zeroHP" to cascade dismissal.
+// caster's anchor with dismissReason="tulpaZeroHP" to cascade dismissal. v0.1.10
+// renamed this from "zeroHP" so the chat card can distinguish Tulpa-dropped-to-0
+// (this path) from caster-dropped-to-0 (DAE specialDuration "zeroHP" → "casterZeroHP").
 const watchers = new Map(); // tulpaUuid -> hook id
 
 export function armTulpaHpWatcher(tulpaUuid, castConfig, damageType) {
@@ -41,7 +43,7 @@ export function armTulpaHpWatcher(tulpaUuid, castConfig, damageType) {
     // that could race with a page reload.
     const anchor = findAnchorForTulpa(tulpaUuid);
     if (anchor) {
-      anchor.delete({ [MODULE_ID]: { dismissReason: "zeroHP" } })
+      anchor.delete({ [MODULE_ID]: { dismissReason: "tulpaZeroHP" } })
         .catch(err => console.warn(`${MODULE_ID} | tulpa-hp-watcher anchor delete failed:`, err));
     }
     unarmTulpaHpWatcher(tulpaUuid);

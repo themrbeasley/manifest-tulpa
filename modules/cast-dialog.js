@@ -95,6 +95,17 @@ class ManifestTulpaCastDialog extends HandlebarsApplicationMixin(ApplicationV2) 
     );
   }
 
+  // ApplicationV2's default `_updatePosition` reads `this.element.offsetWidth` to
+  // size auto-height windows; if another module (BBMM, popout windows) closes our
+  // dialog mid-positioning the element can be null, throwing a TypeError that
+  // aborts the render *after* `postUseActivity` already spent the slot — producing
+  // a "ghost cast" with no dialog. Null-guard so the error surfaces as a no-op
+  // instead of a thrown exception that derails the cast flow. v0.1.10 scar.
+  _updatePosition(position) {
+    if (!this.element) return position;
+    return super._updatePosition(position);
+  }
+
   _onToggle(event) {
     const slug = event.currentTarget.dataset.slug;
     const m = MODIFICATIONS[slug];

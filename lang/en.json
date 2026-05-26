@@ -23,7 +23,8 @@
       "DismissTitle": "Tulpa Dismissed",
       "Reason": {
         "duration": "the spell's duration ended",
-        "zeroHP": "the caster fell to 0 HP",
+        "tulpaZeroHP": "the Tulpa was reduced to 0 hit points",
+        "casterZeroHP": "the caster fell to 0 HP",
         "isDeath": "the caster died",
         "recast": "the caster recast the spell",
         "manual": "the token was removed manually"

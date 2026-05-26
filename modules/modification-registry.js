@@ -17,6 +17,53 @@ export function iterActivities(activities) {
   return Object.entries(activities);
 }
 
+// Coerce a damage-part `types` field of any shape into a plain JS array. In dnd5e
+// 5.2.5, `DamageData.types` is a `Set`; `foundry.utils.deepClone` degrades Sets into
+// plain `{0: "bludgeoning"}` objects, which `item.update` then silently rejects when
+// the full parts array is round-tripped (the data model accepts only Set or array).
+// We normalize at read time so the entire downstream pipeline (patchActivity, the
+// `strike.update(...)` write) only ever sees plain arrays. v0.1.10 scar — see
+// docs/superpowers/test-plans/2026-05-26-v0.1.9-smoke-report.md Bug 1.
+function toTypesArray(t) {
+  if (!t) return [];
+  if (t instanceof Set) return [...t];
+  if (Array.isArray(t)) return [...t];
+  if (typeof t === "object") return Object.values(t);
+  return [];
+}
+
+// Spread a damage part into a plain object and replace `types` with a plain array.
+// Uses `toObject()` when the part is a DataModel instance so non-enumerable getter
+// fields survive the copy; falls back to a shallow spread for plain-object fixtures.
+function freshenPart(p) {
+  const base = typeof p?.toObject === "function" ? p.toObject() : { ...(p ?? {}) };
+  return { ...base, types: toTypesArray(p?.types) };
+}
+
+/**
+ * Build the final `damage.parts` array for one activity on the Manifestation Strike.
+ *
+ * Reads the original parts, normalizes each one's `types` to a plain array, sets
+ * Part 0's `types` to `[damageType]`, then runs every item-patch modification's
+ * `patchActivity` transformer in order. Returns a brand-new array of plain objects
+ * safe to drop into `update["system.activities.X.damage.parts"]`.
+ *
+ * Pure — no Foundry globals, no deepClone. Unit-tested in
+ * tests/modification-registry.test.mjs against Set / array / object / undefined
+ * `types` shapes so a future dnd5e DamageData refactor can't re-introduce the
+ * v0.1.9 silent-update regression.
+ */
+export function buildStrikeParts(parts, damageType, itemPatches = []) {
+  let next = (parts ?? []).map(freshenPart);
+  if (next.length) next[0] = { ...next[0], types: [damageType] };
+  for (const m of itemPatches) {
+    if (typeof m?.patchActivity === "function") {
+      next = m.patchActivity({ parts: next, damageType });
+    }
+  }
+  return next;
+}
+
 function aeTemplate({ name, icon, changes, flags = {}, statuses = [] }) {
   return {
     name,

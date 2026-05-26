@@ -1,4 +1,4 @@
-import { MODIFICATIONS, iterActivities } from "./modification-registry.js";
+import { MODIFICATIONS, iterActivities, buildStrikeParts } from "./modification-registry.js";
 import { MODULE_ID, NS, ANCHOR_AE_NAME, ANCHOR_DURATION_SECONDS } from "./constants.js";
 import { openCastDialog } from "./cast-dialog.js";
 import { postCast, postWarning } from "./chat-cards.js";
@@ -119,24 +119,20 @@ function locateSummonedTulpa(results, caster) {
   return candidates[0] ?? null;
 }
 
-// Single-writer for the Manifestation Strike weapon: read every activity's `damage.parts`
-// once, set Part 0's `types` to the chosen damage type, then run each item-patch
-// modification's `patchActivity({parts, damageType})` transformer in order. One combined
-// `strike.update()` keeps the writes from racing — v0.1.8 split this into a base-type
-// write + a per-patch write and the latter's `deepClone` clobbered the former. See the
-// `empoweredStrikes` comment in modification-registry.js for the full scar.
+// Single-writer for the Manifestation Strike weapon. The heavy lifting (Set→array
+// coercion on `DamageData.types`, Part 0 damage-type override, item-patch composition)
+// lives in `buildStrikeParts` so it's pure and unit-testable. v0.1.9 used
+// `foundry.utils.deepClone` here, which degrades the Set-typed `types` field into a
+// plain `{0: "..."}` object — dnd5e's DamageData silently rejected the resulting
+// update, leaving the strike on its compendium-baked "force" base type. v0.1.10 scar.
 async function applyStrikeChanges(tulpa, castConfig, chosen) {
   const strike = tulpa.items.find(i => i.name === "Manifestation Strike");
   if (!strike) return;
   const itemPatches = chosen.filter(x => x.kind === "item-patch" && typeof x.patchActivity === "function");
   const update = {};
   for (const [actId, act] of iterActivities(strike.system?.activities)) {
-    let parts = foundry.utils.deepClone(act.damage?.parts ?? []);
-    if (parts.length) parts[0].types = [castConfig.damageType];
-    for (const m of itemPatches) {
-      parts = m.patchActivity({ parts, damageType: castConfig.damageType });
-    }
-    update[`system.activities.${actId}.damage.parts`] = parts;
+    update[`system.activities.${actId}.damage.parts`] =
+      buildStrikeParts(act.damage?.parts, castConfig.damageType, itemPatches);
   }
   if (Object.keys(update).length) await strike.update(update);
 }

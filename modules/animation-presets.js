@@ -51,7 +51,7 @@ export const PRESETS = {
       fadeOut: 800,
     },
     strike: { asset: "jb2a.unarmed_strike.magical.pinkpurple" },
-    impact: { asset: "jb2a.impact.010.pink" },
+    impact: { asset: "jb2a.impact.010.pinkpurple" },
     auraTint: "#d650a8",
   },
 };
