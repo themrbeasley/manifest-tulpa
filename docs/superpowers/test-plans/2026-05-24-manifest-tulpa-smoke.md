@@ -87,7 +87,7 @@ If R4, R6, R12, R13, or R21 fails, **stop** and re-open the most recent test rep
    - **Spellcasting Ability**, **Spell DC**, and **CR** match the caster (see R10).
    - **Manifestation Strike** damage type is psychic on both melee and ranged activities (see R8).
 7. Cast confirmation chat card posts.
-8. Manifestation animation plays (purple→pink ring) if jb2a_patreon present.
+8. Manifestation animation plays (the chosen damage type's ring effect at the Tulpa's token). jb2a_patreon + autoanimations are required dependencies as of v0.1.9, so a missing animation here means an asset-version mismatch or a Sequencer database issue, not an absent module — investigate rather than ignore.
 
 ## Modification correctness (verifies Tasks 6–9)
 
@@ -127,15 +127,44 @@ For each pair below, cast → confirm → inspect the Tulpa:
 
 ## Dismissal triggers (verifies Task 15)
 
-For each, perform the action then verify the anchor AE, the Tulpa token, and a "Tulpa Dismissed" chat card all go away:
+For each, perform the action then verify the anchor AE, the Tulpa token, and a "Tulpa Dismissed" chat card all go away. **After every dismissal**, run the two console snippets below against the caster and record both counts — they must both be `0`. Any non-zero count indicates an anchor leak (see "Anchor AE leak watch" below).
 
-| # | Action | Reason in chat |
-|---|---|---|
-| 1 | Wait 1 hour of game-world time (use `game.time.advance(3600)`) | duration |
-| 2 | Deal damage equal to the **Tulpa's** HP (with Relentless absent or already consumed — see R16/R17) | zeroHP |
-| 3 | Toggle caster dead status (see R18 for stale-UUID fallback) | isDeath |
-| 4 | Re-cast Manifest Tulpa (see R15) | recast |
-| 5 | Right-click → delete the Tulpa token | manual |
+```js
+// Counts AEs whose displayed name matches the anchor name.
+game.actors.getName("<caster name>").effects.filter(e => e.name === "Manifest Tulpa (active)").length
+
+// Counts AEs that actually carry the tulpaUuid flag (the load-bearing identity).
+game.actors.getName("<caster name>").effects.filter(e => e.getFlag("manifest-tulpa", "tulpaUuid")).length
+```
+
+If those two counts diverge (e.g. 1 anchor by name but 0 by flag, or vice versa), capture both numbers in the per-version smoke report — the divergence localizes the bug between "AE leaked with name only" vs "anchor leaked still flagged".
+
+| # | Action | Reason in chat | Anchor-by-name count after | Anchor-by-flag count after |
+|---|---|---|---|---|
+| 1 | Wait 1 hour of game-world time (use `game.time.advance(3600)`) | duration | 0 | 0 |
+| 2 | Deal damage equal to the **Tulpa's** HP (with Relentless absent or already consumed — see R16/R17) | zeroHP | 0 | 0 |
+| 3 | Toggle caster dead status (see R18 for stale-UUID fallback) | isDeath | 0 | 0 |
+| 4 | Re-cast Manifest Tulpa (see R15) | recast | 1 (the new live Tulpa's anchor) | 1 |
+| 5 | Right-click → delete the Tulpa token | manual | 0 | 0 |
+
+## Anchor AE leak watch (under investigation)
+
+Tester reports from v0.1.8 noted that after a session of repeated cast/dismiss cycles the caster sometimes accumulated multiple AEs sharing the "Manifest Tulpa (active)" name. The architectural invariant (CLAUDE.md §"Architectural invariants" item 1) is **exactly one anchor while a Tulpa is live, zero otherwise** — so any accumulation is a bug. Run this stress test to try to reproduce:
+
+1. Pick one caster. Run the two console snippets from the previous section against them now — both must read `0` before starting.
+2. Cycle through this sequence five times in a row, alternating dismissal triggers:
+   - Cycle 1: cast → wait 1 hour via `game.time.advance(3601)` (duration dismissal)
+   - Cycle 2: cast → kill the Tulpa (zeroHP dismissal; no Relentless selected)
+   - Cycle 3: cast → toggle caster dead status, then toggle it back off (isDeath dismissal)
+   - Cycle 4: cast → cast Manifest Tulpa again without dismissing first (recast dismissal, then immediate fresh cast)
+   - Cycle 5: cast → right-click → delete the Tulpa token (manual dismissal)
+3. **After each cycle's dismissal completes** (chat card posted), re-run both console snippets and record both counts in the per-version smoke report under a new "Anchor AE leak watch" section. Expected: both counts return to `0` after every dismissal trigger except cycle 4's recast step, which transiently goes `1 → 1` (old deleted, new created).
+4. If at any point either count exceeds `1` (or doesn't return to `0` post-dismissal), **stop the cycle test** and capture:
+   - The full output of `game.actors.getName("<caster>").effects.map(e => ({ name: e.name, id: e.id, flags: e.flags["manifest-tulpa"], duration: e.duration?.remaining }))`
+   - The most recent ~50 lines of console output (filter to `manifest-tulpa |` and any errors/warnings)
+   - Which cycle number and dismissal trigger produced the leak
+
+This data turns a "happens sometimes" report into an actionable bug for the next patch.
 
 ## Session reload (verifies the startup scan in Task 13 / 15)
 
@@ -143,10 +172,29 @@ For each, perform the action then verify the anchor AE, the Tulpa token, and a "
 2. Reload the world (refresh the tab).
 3. Inflict killing damage on the Tulpa. Expected: HP clamps to 1, Relentless chat posts. (Confirms the watcher was re-armed at `ready`.)
 
+## Animation coverage (verifies the v0.1.9 required-deps decision)
+
+`jb2a_patreon` and `autoanimations` are required dependencies as of v0.1.9 (previously `recommends`). Prior smoke-test environments ran with autoanimations **inactive** (see the v0.1.7 and v0.1.8 reports), so no test has actually verified animations end-to-end against the new required baseline. This section closes that gap.
+
+Setup: confirm both `jb2a_patreon` and `autoanimations` show **YES** in the per-version smoke-report environment table before running the rest of this section.
+
+| # | Action | Expected animation | Notes |
+|---|---|---|---|
+| A1 | Cast Manifest Tulpa with **force** | Manifestation ring effect (blue/white tint) appears at the Tulpa token, fades in then out | Sequencer-driven via `playManifest` in [modules/animations.js](../../../modules/animations.js#L36); jb2a asset comes from `PRESETS.force.manifest.asset` in [modules/animation-presets.js](../../../modules/animation-presets.js) |
+| A2 | Repeat A1 with **radiant** | Manifestation ring effect with a radiant (yellow/gold) tint | Verifies per-damage-type asset variation, not just the force path |
+| A3 | Repeat A1 with **psychic** | Manifestation ring effect with a psychic (purple/pink) tint | Same as A2 for the third damage type |
+| A4 | Have the Tulpa attack a target with **Manifestation Strike** (melee) | Strike attack animation auto-plays via autoanimations (weapon-derived visual) | Autoanimations auto-detects weapon items and plays its configured animation; if nothing plays, check autoanimations' Item Settings on the Manifestation Strike weapon. **This was not testable before v0.1.9** because autoanimations was inactive in the test environment. |
+| A5 | Have the Tulpa make a **ranged** Manifestation Strike | Strike animation plays for the ranged variant (projectile-style) | Same as A4 but verifies both activities have working autoanimations triggers |
+| A6 | Cast with **Relentless**, deal lethal damage | Impact/flash effect appears at the Tulpa as HP clamps to 1 | Sequencer-driven via `playRelentless` in [modules/animations.js](../../../modules/animations.js#L77); fires synchronously with the chat card |
+| A7 | Dismiss the Tulpa (any trigger) | Dismiss effect plays at the token before deletion | Sequencer-driven via `playDismiss` in [modules/animations.js](../../../modules/animations.js#L56); the dismiss flow `waitUntilFinished(-200)`s so the animation visibly finishes before the token disappears |
+| A8 | Cast with **Harrowing Presence** + force | Aura ring is rendered around the Tulpa (subtle blue tint at 0.25 opacity) | Aura Effects-driven, not Sequencer; the tint color comes from `PRESETS[damageType].auraTint` |
+| A9 | After A1-A8 complete, scan the browser console | **No** `manifest animation timed out after 5000ms`, `dismiss animation timed out`, or `relentless animation timed out` lines | Timeout fires only when the Sequencer asset is missing/unindexed; with both deps required and present, the 5s safety net should never engage |
+
+If any of A1-A8 fails to produce a visible animation, capture the console output around the trigger and a `Sequencer.Database.entryExists("<asset path from PRESETS>")` check in the per-version smoke report.
+
 ## Failure modes documented in the spec
 
-- `jb2a_patreon` absent → mechanics still work, no manifest/dismiss/Relentless visuals, one console warning per attempt.
-- `autoanimations` absent → strikes resolve mechanically, no strike animation.
+As of v0.1.9, `jb2a_patreon` and `autoanimations` are required dependencies, so Foundry's module-install flow blocks the world from loading if either is missing. The previous "absent dep → mechanics still work, no visuals" failure modes are no longer reachable. The asset-availability check in [modules/animations.js](../../../modules/animations.js) remains in place as defense-in-depth for individual asset version drift (a JB2A patreon-vs-free asset rename, a Sequencer DB indexing failure, etc.), but the dependency modules themselves are now hard prerequisites.
 
 ## Sign-off
 
