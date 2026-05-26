@@ -6,8 +6,12 @@ import { unarmTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 /**
  * deleteActiveEffect hook — fires when the caster-side anchor AE is removed for any reason.
  * This is the single funnel for all five dismissal triggers (see Section 5).
+ *
+ * Foundry's hook signature is `(effect, options, userId)`. We read the dismiss reason from
+ * `options[MODULE_ID]` first (passed via `anchor.delete({...})` from recast/zeroHP/manual
+ * paths) and only fall back to the legacy flag-on-the-anchor lookup for backward compat.
  */
-export async function onDeleteActiveEffect(effect /*, options, userId */) {
+export async function onDeleteActiveEffect(effect, options /*, userId */) {
   const tulpaUuid = effect.getFlag?.(MODULE_ID, "tulpaUuid");
   if (!tulpaUuid) return; // only anchors carry this flag
   const castConfig = effect.getFlag(MODULE_ID, "castConfig") ?? {};
@@ -26,8 +30,9 @@ export async function onDeleteActiveEffect(effect /*, options, userId */) {
     console.debug(`${MODULE_ID} | dismiss: could not resolve tulpa (uuid=${tulpaUuid}, scene=${sceneId}, token=${tokenId})`);
   }
 
-  const reason = inferReason(effect);
-  const skipTokenTeardown = effect.getFlag?.(MODULE_ID, "skipTokenTeardown") === true;
+  const reason = inferReason(effect, options, caster);
+  const skipTokenTeardown = options?.[MODULE_ID]?.skipTokenTeardown === true
+    || effect.getFlag?.(MODULE_ID, "skipTokenTeardown") === true;
 
   // Tear down in-memory watchers first.
   unarmTulpaHpWatcher(tulpaUuid);
@@ -71,19 +76,33 @@ export async function onPreDeleteToken(tokenDoc) {
   if (!caster) return;
   const anchor = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid") === tokenDoc.actor.uuid);
   if (!anchor) return;
-  // Tag the anchor: report the right reason AND tell the funnel not to re-delete the token
-  // (Foundry is already mid-tearing-down the token we were called about).
-  await anchor.update({
-    [`flags.${MODULE_ID}.dismissReason`]: "manual",
-    [`flags.${MODULE_ID}.skipTokenTeardown`]: true,
-  });
-  await anchor.delete();
+  // Pass reason + skipTokenTeardown via delete options (sync, no awaited setFlag race).
+  // Foundry surfaces these to `onDeleteActiveEffect` as its 2nd hook arg. The
+  // skipTokenTeardown flag tells the funnel not to re-delete the token — Foundry is
+  // already mid-tearing-down the token we were called about.
+  await anchor.delete({ [MODULE_ID]: { dismissReason: "manual", skipTokenTeardown: true } });
 }
 
-function inferReason(effect) {
+// Reason resolution ladder, most-trusted to least.
+//   1. options[MODULE_ID].dismissReason — set by recast/Tulpa-zeroHP/manual paths via
+//      `anchor.delete({...})`. Canonical signal in v0.1.9+.
+//   2. anchor flag dismissReason — legacy path; v0.1.8 wrote this via awaited setFlag.
+//      Kept for backward compat with anchors created before this fix.
+//   3. caster has the `dead` status → "isDeath" (DAE specialDuration `isDeath` trigger).
+//   4. caster HP ≤ 0 → "zeroHP" (DAE specialDuration `zeroHP` trigger; lang text reads
+//      "the caster fell to 0 HP").
+//   5. anchor duration exhausted → "duration" (times-up deletes the AE on expiry).
+//   6. Otherwise "manual" — caller is most likely the GM right-clicking the AE icon.
+//      v0.1.8 fell back to "duration" here, which mislabeled GM-driven removals.
+function inferReason(effect, options, caster) {
+  const optReason = options?.[MODULE_ID]?.dismissReason;
+  if (optReason) return optReason;
   const tagged = effect.getFlag?.(MODULE_ID, "dismissReason");
   if (tagged) return tagged;
-  // DAE specialDuration triggers stamp flags.dae.disabled or similar at delete time;
-  // without a reliable signal we fall back to 'duration'.
-  return "duration";
+  if (caster?.statuses?.has?.("dead")) return "isDeath";
+  const casterHp = caster?.system?.attributes?.hp?.value;
+  if (typeof casterHp === "number" && casterHp <= 0) return "zeroHP";
+  const remaining = effect.duration?.remaining;
+  if (remaining != null && remaining <= 0) return "duration";
+  return "manual";
 }

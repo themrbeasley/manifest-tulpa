@@ -118,23 +118,24 @@ export const MODIFICATIONS = {
     category: "combat", slots: 1, kind: "item-patch",
     // In dnd5e 5.2.5 the Manifestation Strike weapon stores damage entries inside each
     // activity's `damage.parts`, not at `system.damage.parts`. Append a +1d8 of the chosen
-    // damage type to every activity (melee + ranged) so both attack profiles benefit.
-    patch: (strike, damageType) => {
-      const clone = globalThis.foundry?.utils?.deepClone ?? structuredClone;
-      const update = {};
-      for (const [actId, act] of iterActivities(strike?.system?.activities)) {
-        const parts = clone(act.damage?.parts ?? []);
-        parts.push({
-          number: 1,
-          denomination: 8,
-          bonus: "",
-          types: [damageType],
-          custom: { enabled: false, formula: "" },
-          scaling: { mode: "", number: null, formula: "" },
-        });
-        update[`system.activities.${actId}.damage.parts`] = parts;
-      }
-      return update;
+    // damage type. v0.1.8 shipped this as `patch(strike, damageType) => update` and ran
+    // it as a *second* `strike.update()` after `setStrikeDamageType`; the second write's
+    // `deepClone(act.damage?.parts)` captured the pre-update state and clobbered Part 0's
+    // type back to "bludgeoning" (v0.1.8 BLOCKING bug A). The single-writer fix in
+    // cast-flow.js `applyStrikeChanges` now reads each activity's parts once, applies the
+    // base damage type, runs every `patchActivity` transformer, and writes one update —
+    // so this modification just transforms the parts array in-place.
+    patchActivity: ({ parts, damageType }) => {
+      const next = [...parts];
+      next.push({
+        number: 1,
+        denomination: 8,
+        bonus: "",
+        types: [damageType],
+        custom: { enabled: false, formula: "" },
+        scaling: { mode: "", number: null, formula: "" },
+      });
+      return next;
     },
   },
   multiattack: {

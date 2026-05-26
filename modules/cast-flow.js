@@ -25,13 +25,14 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   const availableSlots = Math.min(6, 2 + Math.max(0, slotLevel - 5));
 
   // Trigger #4 — if a previous anchor exists, delete it first (dismisses the previous Tulpa).
-  // Tag the dismissReason before delete so the dismiss-flow chat card credits "recast"
-  // instead of falling through to the generic "manual" inference. v0.1.6 shipped this
-  // path without the tag and recasts mis-reported as manual.
+  // Pass `dismissReason: "recast"` via delete options so the dismiss-flow chat card
+  // credits "recast" instead of falling through to the generic inference. v0.1.6
+  // shipped this without a tag; v0.1.7 added an awaited `setFlag` before delete;
+  // v0.1.9 switches to options-pass-through so the reason rides the same hook call
+  // and can't race with the delete.
   const previous = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid"));
   if (previous) {
-    await previous.setFlag(MODULE_ID, "dismissReason", "recast");
-    await previous.delete();
+    await previous.delete({ [MODULE_ID]: { dismissReason: "recast" } });
   }
 
   const selection = await openCastDialog({ availableSlots });
@@ -64,8 +65,11 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   // imperatively bake the spell's AC/HP/spellcasting/prof formulas onto the spawned actor.
   await applyCasterStats(tulpa, caster, slotLevel);
 
-  // Step 2: damage type on the Manifestation Strike.
-  await setStrikeDamageType(tulpa, castConfig.damageType);
+  // Step 2 (was a separate `setStrikeDamageType` write) is now folded into
+  // `applyStrikeChanges` inside `applyModifications` — Part 0's damage type and every
+  // item-patch transformer share a single `strike.update()` so writes can't race.
+  // v0.1.9 scar: v0.1.8 split this into two awaited writes and the second one's
+  // `deepClone` captured stale state, clobbering the base damage type.
 
   // Step 3: apply modifications in spec order.
   await applyModifications(tulpa, caster, castConfig);
@@ -115,18 +119,23 @@ function locateSummonedTulpa(results, caster) {
   return candidates[0] ?? null;
 }
 
-async function setStrikeDamageType(tulpa, damageType) {
+// Single-writer for the Manifestation Strike weapon: read every activity's `damage.parts`
+// once, set Part 0's `types` to the chosen damage type, then run each item-patch
+// modification's `patchActivity({parts, damageType})` transformer in order. One combined
+// `strike.update()` keeps the writes from racing — v0.1.8 split this into a base-type
+// write + a per-patch write and the latter's `deepClone` clobbered the former. See the
+// `empoweredStrikes` comment in modification-registry.js for the full scar.
+async function applyStrikeChanges(tulpa, castConfig, chosen) {
   const strike = tulpa.items.find(i => i.name === "Manifestation Strike");
   if (!strike) return;
-  // dnd5e 5.2.5 stores attack damage inside each activity's `damage.parts`.
-  // `system.damage.base` exists on the weapon but has empty `types` on this template.
-  // `activities` is an `ActivityCollection` (Map) — iterate via `iterActivities` not
-  // `Object.entries`, which returns [] on Maps (v0.1.7 bug A scar).
+  const itemPatches = chosen.filter(x => x.kind === "item-patch" && typeof x.patchActivity === "function");
   const update = {};
   for (const [actId, act] of iterActivities(strike.system?.activities)) {
-    const parts = foundry.utils.deepClone(act.damage?.parts ?? []);
-    if (!parts.length) continue;
-    parts[0].types = [damageType];
+    let parts = foundry.utils.deepClone(act.damage?.parts ?? []);
+    if (parts.length) parts[0].types = [castConfig.damageType];
+    for (const m of itemPatches) {
+      parts = m.patchActivity({ parts, damageType: castConfig.damageType });
+    }
     update[`system.activities.${actId}.damage.parts`] = parts;
   }
   if (Object.keys(update).length) await strike.update(update);
@@ -174,13 +183,10 @@ async function applyCasterStats(tulpa, caster, slotLevel) {
 async function applyModifications(tulpa, caster, castConfig) {
   const chosen = castConfig.modifications.map(s => ({ slug: s, ...MODIFICATIONS[s] })).filter(m => m.kind);
 
-  // 1: item patches (so AEs see the final strike shape).
-  for (const m of chosen.filter(x => x.kind === "item-patch")) {
-    const strike = tulpa.items.find(i => i.name === "Manifestation Strike");
-    if (!strike) continue;
-    const update = m.patch(strike, castConfig.damageType);
-    await strike.update(update);
-  }
+  // 1: Manifestation Strike final shape — Part 0 damage type + every item-patch
+  // transformer composed into a single `strike.update()` so later writes can't read
+  // stale in-memory parts arrays.
+  await applyStrikeChanges(tulpa, castConfig, chosen);
 
   // 2: item inserts.
   const insertedItems = chosen.filter(x => x.kind === "item-insert").map(x => x.item);

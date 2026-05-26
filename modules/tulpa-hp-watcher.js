@@ -12,7 +12,13 @@ const watchers = new Map(); // tulpaUuid -> hook id
 
 export function armTulpaHpWatcher(tulpaUuid, castConfig, damageType) {
   if (watchers.has(tulpaUuid)) return;
-  const id = Hooks.on("preUpdateActor", async (actor, changes) => {
+  // Foundry V13's hook dispatcher calls preUpdate handlers and discards any returned
+  // Promise — async work inside them is fire-and-forget. v0.1.8 used `await actor.setFlag`
+  // here to mark `relentlessUsed`, and a page reload between the clamp and the next hit
+  // dropped the flag (smoke-report bug B). v0.1.9: piggyback the flag onto the same
+  // `changes` object via synchronous `setProperty`, and pass `dismissReason` to the
+  // anchor delete via `options` rather than a separate `setFlag` write.
+  const id = Hooks.on("preUpdateActor", (actor, changes) => {
     if (actor.uuid !== tulpaUuid) return;
     const newHp = foundry.utils.getProperty(changes, "system.attributes.hp.value");
     if (newHp == null || newHp > 0) return;
@@ -20,23 +26,23 @@ export function armTulpaHpWatcher(tulpaUuid, castConfig, damageType) {
     const hasRelentless = castConfig?.modifications?.includes?.("relentless");
     if (hasRelentless && !actor.getFlag(MODULE_ID, "relentlessUsed")) {
       foundry.utils.setProperty(changes, "system.attributes.hp.value", 1);
-      await actor.setFlag(MODULE_ID, "relentlessUsed", true);
-      await postRelentless({ tulpa: actor });
+      foundry.utils.setProperty(changes, `flags.${MODULE_ID}.relentlessUsed`, true);
+      // postRelentless + playRelentless are side-effecting (chat card + animation) and
+      // don't gate any other hook's state, so fire-and-forget is fine here.
+      postRelentless({ tulpa: actor }).catch(err => console.warn(`${MODULE_ID} | postRelentless:`, err));
       const token = actor.getActiveTokens()[0];
-      if (token) await playRelentless(token, damageType);
+      if (token) playRelentless(token, damageType).catch(err => console.warn(`${MODULE_ID} | playRelentless:`, err));
       return;
     }
 
     // No Relentless (or already used): cascade-dismiss via the caster's anchor AE.
-    // Tag the dismiss reason so the chat card reads "zeroHP" instead of "manual".
+    // Pass `dismissReason` through the delete options — `onDeleteActiveEffect` reads it
+    // out of the hook's 2nd arg, so we don't need a separate awaited `setFlag` write
+    // that could race with a page reload.
     const anchor = findAnchorForTulpa(tulpaUuid);
     if (anchor) {
-      try {
-        await anchor.setFlag(MODULE_ID, "dismissReason", "zeroHP");
-        await anchor.delete();
-      } catch (err) {
-        console.warn(`${MODULE_ID} | tulpa-hp-watcher anchor delete failed:`, err);
-      }
+      anchor.delete({ [MODULE_ID]: { dismissReason: "zeroHP" } })
+        .catch(err => console.warn(`${MODULE_ID} | tulpa-hp-watcher anchor delete failed:`, err));
     }
     unarmTulpaHpWatcher(tulpaUuid);
   });
