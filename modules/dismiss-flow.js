@@ -2,6 +2,7 @@ import { MODULE_ID } from "./constants.js";
 import { postDismiss } from "./chat-cards.js";
 import { playDismiss, endAuraEffect } from "./animations.js";
 import { unarmTulpaHpWatcher } from "./tulpa-hp-watcher.js";
+import { findSystemSummonAE } from "./dismiss-helpers.js";
 
 /**
  * deleteActiveEffect hook — fires when the caster-side anchor AE is removed for any reason.
@@ -64,6 +65,17 @@ export async function onDeleteActiveEffect(effect, options /*, userId */) {
         catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
       }
     }
+  }
+
+  // v0.1.12 Bug 1 fix (carried since v0.1.9): dnd5e's summon flow creates a
+  // "Summon: Manifest Tulpa" AE on the caster (with `flags.dnd5e.summon.origin`
+  // pointing at the spell item). The single-funnel dismissal only removes the
+  // module's anchor — sweep the system AE here so it doesn't accumulate across
+  // casts. Predicate lives in dismiss-helpers.js for Node-testability.
+  const systemAE = findSystemSummonAE(caster);
+  if (systemAE) {
+    try { await systemAE.delete(); }
+    catch (err) { console.warn(`${MODULE_ID} | system summon AE cleanup failed:`, err); }
   }
 
   await postDismiss({ caster, tulpa, reason });

@@ -5,6 +5,7 @@ import { postCast, postWarning } from "./chat-cards.js";
 import { playManifest } from "./animations.js";
 import { armTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 import { alignTulpaInitiative } from "./initiative.js";
+import { pickSummonedFromResults, scanPlaceablesForSummon } from "./locate-helpers.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
 
@@ -35,10 +36,15 @@ export async function onPostUseActivity(activity, usageConfig, results) {
     await previous.delete({ [MODULE_ID]: { dismissReason: "recast" } });
   }
 
-  const selection = await openCastDialog({ availableSlots });
-  // From here on the Tulpa is on the canvas; any abort must clean it up to avoid orphans.
+  // Capture the freshly-summoned Tulpa BEFORE the dialog opens. dnd5e's SummonActivity
+  // has already placed the TokenDocument on `results.summoned` by the time postUseActivity
+  // fires — capturing now means an abort path always has a handle to delete, even if the
+  // dialog wait is long. v0.1.11 captured AFTER the dialog *and* read the stale key
+  // `results.createdTokens` (which is always undefined in 5.2.5), so cancel-cleanup
+  // fell through to a canvas scan that couldn't reliably find the orphan → smoke Bug 2.
   const token = locateSummonedTulpa(results, caster);
 
+  const selection = await openCastDialog({ availableSlots });
   if (!selection) {
     await abortAndCleanup(token, game.i18n.localize("MANIFEST_TULPA.Chat.CancelWarning"));
     return;
@@ -103,20 +109,16 @@ function parseSlotLevel(usageConfig) {
   return 5;
 }
 
+// Returns the freshly-summoned Tulpa as a TokenDocument (or null). dnd5e 5.2.5 stores
+// the created TokenDocument[] under `results.summoned` (see system source:
+// `module/documents/activity/summon.mjs` ~L113). The canvas-scan path is kept as a
+// defensive fallback only — it returns a placeable, which we normalize to its document
+// so downstream `token.delete()` / `token.actor` / Sequencer calls all work the same.
 function locateSummonedTulpa(results, caster) {
-  const created = results?.createdTokens?.[0];
-  if (created) return created;
-  // Fallback: most recently created token whose summon.origin belongs to this caster.
-  // `flags.dnd5e.summon.origin` is an *item/activity* UUID (e.g. `Actor.xxx.Item.yyy.Activity.zzz`),
-  // not the caster actor's UUID. Match by prefix on the caster UUID.
-  const prefix = `${caster.uuid}.`;
-  const candidates = canvas.tokens.placeables
-    .filter(t => {
-      const origin = t.actor?.getFlag?.("dnd5e", "summon")?.origin;
-      return typeof origin === "string" && origin.startsWith(prefix);
-    });
-  candidates.sort((a, b) => (b.document._stats?.createdTime ?? 0) - (a.document._stats?.createdTime ?? 0));
-  return candidates[0] ?? null;
+  const fromResults = pickSummonedFromResults(results);
+  if (fromResults) return fromResults;
+  const placeable = scanPlaceablesForSummon(canvas.tokens.placeables, caster.uuid);
+  return placeable?.document ?? null;
 }
 
 // Single-writer for the Manifestation Strike weapon. The heavy lifting (Set→array
@@ -222,7 +224,8 @@ async function applyModifications(tulpa, caster, castConfig) {
 
 async function abortAndCleanup(token, message) {
   if (token) {
-    try { await token.document.delete(); }
+    // `token` is a TokenDocument (see locateSummonedTulpa), so call `.delete()` directly.
+    try { await token.delete(); }
     catch (err) { console.warn(`${MODULE_ID} | abort token cleanup failed:`, err); }
   }
   await postWarning({ message });

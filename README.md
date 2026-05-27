@@ -17,13 +17,16 @@ https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.j
 - dae
 - times-up
 - sequencer
-- portal-lib
-- auraeffects 1.5.2+ ("Aura Effects" by mclemente)
-
-## Recommended
-
+- portal-lib ("Portal" by theripper93)
+- lib-wrapper
+- socketlib
+- ActiveAuras 0.12.7+ ("Active Auras" by kandashi)
 - autoanimations ("Automated Animations" by tposney)
 - jb2a_patreon
+
+## Setup notes
+
+**ActiveAuras → "Only check Auras while in combat" (combatOnly):** if this world setting is enabled, Active Auras only scans for aura sources while a combat is active. Harrowing Presence relies on AA to propagate its marker AE to in-range hostiles, so when combatOnly is on **and** no combat is active, the aura will not apply and saves will not be rolled. Either start a combat encounter before casting, or disable the setting under Game Settings → Module Settings → Active Auras. The module logs a `manifest-tulpa | note: ...` line at ready when combatOnly is enabled so you know which mode you're in.
 
 ## Development
 

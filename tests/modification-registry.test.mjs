@@ -123,7 +123,7 @@ test("harrowingPresence.build returns an Active-Auras-tagged effect whose change
   // `flags.ActiveAuras` block to know it's an aura.
   assert.equal(built.aura.type, undefined, "v0.1.11 effect must not carry the old auraeffects.aura type discriminator");
   // The two flag-key changes ride the cloned effect onto each in-range hostile target;
-  // the combatTurnStart hook reads them via `actor.getFlag(MODULE_ID, ...)`.
+  // the dnd5e.combatRecovery hook reads them via `actor.getFlag(MODULE_ID, ...)`.
   const changeKeys = built.aura.changes.map(c => c.key).sort();
   assert.deepEqual(changeKeys, [
     "flags.manifest-tulpa.auraDC",

@@ -1,11 +1,19 @@
 import { MODULE_ID } from "./constants.js";
 
 /**
- * dnd5e.combatTurnStart — if the actor whose turn is starting carries an inHarrowingAura
- * marker AE, roll a Wis save vs the carried DC; on failure, apply 'frightened' with
- * specialDuration: ["turnStart"] so DAE/times-up auto-clears it next turn.
+ * dnd5e.combatRecovery — fires once per non-defeated combatant at the start of every
+ * turn, with `periods` containing "turn" for everyone and additionally "turnStart" for
+ * the one combatant whose turn is actually beginning. We gate on "turnStart" so the
+ * Harrowing save fires exactly once per round on the active combatant.
+ *
+ * v0.1.11 registered `dnd5e.combatTurnStart`, a hook string that dnd5e never emits —
+ * the smoke caught it as Observation 2 (hook didn't auto-fire from `combat.nextTurn()`).
+ * `dnd5e.combatRecovery` is the canonical signal in dnd5e 5.2.5 (see
+ * dnd5e/module/documents/combatant.mjs `recoverCombatUses`).
  */
-export async function onCombatTurnStart(actor /*, combat, combatant */) {
+export async function onCombatRecovery(combatant, periods /*, results */) {
+  if (!Array.isArray(periods) || !periods.includes("turnStart")) return;
+  const actor = combatant?.actor;
   if (!actor) return;
   // Active Auras clones the source effect onto in-range hostile tokens; the cloned
   // effect's `changes` write `flags.manifest-tulpa.inHarrowingAura` and `auraDC` onto
