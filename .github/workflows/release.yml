@@ -52,7 +52,7 @@ jobs:
         run: |
           zip -r manifest-tulpa.zip \
             module.json LICENSE README.md CHANGELOG.md \
-            modules/ styles/ lang/ templates/ packs/ \
+            modules/ styles/ lang/ templates/ packs/ assets/ \
             -x "packs/**/.gitkeep"
 
       - name: Publish release

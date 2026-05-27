@@ -4,6 +4,18 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.14] — 2026-05-27
+
+> Hotfix for v0.1.13. The custom spell icon shipped in v0.1.13 404'd at runtime (`GET /modules/manifest-tulpa/assets/manifest_tulpa_icon.webp 404 (Not Found)`) and the spell rendered with Foundry's broken-image glyph. Root cause: the release workflow's zip step ([.github/workflows/release.yml](.github/workflows/release.yml)) listed `modules/ styles/ lang/ templates/ packs/` but not `assets/`, so the icon file was never bundled into `manifest-tulpa.zip` even though it landed in git and `_source/manifest-tulpa-spells/Item.manifest-tulpa.json` referenced it. No runtime code changes — workflow-only fix plus the version bumps the release pipeline needs.
+
+### Fixed
+
+- **Bundle `assets/` into the release zip.** The `Zip module bundle` step in [.github/workflows/release.yml](.github/workflows/release.yml) now appends `assets/` to its directory list so `manifest_tulpa_icon.webp` (and any future bundled art) actually reaches the user's `modules/manifest-tulpa/` install directory. Verified locally that the zip step pattern matches the runtime path the spell JSON references. Smoke check R45 (icon visible) should now PASS where v0.1.13 would have FAILed end-to-end despite the source change being correct.
+
+### Internal
+
+- **`package.json` version stays in sync with `module.json`.** Both at `0.1.14`.
+
 ## [0.1.13] — 2026-05-27
 
 > Addresses **every** finding from the v0.1.12 smoke-test report ([docs/superpowers/test-plans/2026-05-27-v0.1.12-smoke-report.md](docs/superpowers/test-plans/2026-05-27-v0.1.12-smoke-report.md)) — the CRITICAL REG-1 (`dnd5e.postUseActivity` HOOK3 silently dropped → slot consumed, no Tulpa placed), the HIGH REG-2 (recast crashed at [modules/cast-flow.js:99](modules/cast-flow.js#L99) with `Error: undefined id` because the dismiss cascade was fire-and-forget while the new cast pipeline raced ahead), and the LOW A7 (`dismiss animation timed out after 5000ms` warning fired on healthy JB2A assets whose `.waitUntilFinished(-200)` window comfortably exceeds 5 s). Also packages the user's custom spell icon. **Pack rebuild required** because `_source/manifest-tulpa-spells/Item.manifest-tulpa.json` changed (icon path); `npm run build:packs` ran as part of the release. The CI release workflow will re-run it on tag-push.
