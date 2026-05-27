@@ -1,7 +1,6 @@
 // Section 4 of the spec — single source of truth for what each modification does.
 // Pure data + pure helper functions. No Foundry globals referenced here.
 
-import { PRESETS } from "./animation-presets.js";
 import { MODULE_ID, ANCHOR_DURATION_SECONDS, SIZE_TOKEN_SCALE } from "./constants.js";
 
 export const KINDS = ["ae", "item-patch", "item-insert", "aura+marker"];
@@ -205,51 +204,48 @@ export const MODIFICATIONS = {
   harrowingPresence: {
     category: "combat", slots: 1, kind: "aura+marker",
     build: (caster, damageType) => {
+      // Caster-side spell DC. dnd5e exposes the prepared DC at `spell.dc` in current
+      // versions and at top-level `spelldc` in some 5.x branches; keep both reads with
+      // a sane fallback. We write the resolved number into the effect at cast time so
+      // Active Auras' `foundry.utils.duplicate` of the effect carries a literal DC onto
+      // each in-range target. Using `@attributes.spelldc` in a change formula would
+      // resolve against the *Tulpa's* prepared data when the cloned effect lands on a
+      // hostile target — wrong actor, wrong number.
       const dc = caster.system?.attributes?.spell?.dc ?? caster.system?.attributes?.spelldc ?? 10;
-      // Aura Effects 1.5.2 propagates the aura's `changes` array onto in-range targets
-      // as the marker effect. The `flags.manifest-tulpa.*` reads the combatTurnStart hook
-      // performs (via `actor.getFlag`) resolve against applied AE changes, so the flags
-      // must live in `changes` — not in a separate marker `flags` block, which Aura
-      // Effects does not propagate. v0.1.6 shipped the flags-only layout and the hook
-      // never saw them.
-      // Aura Effects 1.5.2 `auraeffects.aura` data model: every system field below has a
-      // schema-defined default, but in v0.1.7 we shipped a minimal subset and Aura Effects
-      // never propagated the marker (visual rendered, but in-range tokens never received
-      // the changes). Comparing against a manually-authored aura in the same world
-      // (`fvtt-ActiveEffect-harrowing-presence.json` at repo root) revealed the missing
-      // pieces — most critically `collisionTypes: ["move"]`, without which Aura Effects
-      // doesn't run a proximity check on any token event. v0.1.8 ships the full schema.
+      // Active Auras (kandashi 0.12.7) is the propagation engine. v0.1.10 used Aura
+      // Effects, but its sync-only `system.script` predicate plus its V13 registration
+      // path for AE-typed sources on synthetic actors never landed the marker on
+      // hostiles. AA clones the entire effect onto in-range targets via
+      // `foundry.utils.duplicate`, so the `changes` flag-writes and our `flags`
+      // bag both ride along untouched — the `combatTurnStart` hook reads them via
+      // `actor.getFlag(MODULE_ID, "inHarrowingAura")` on the marker-affected target.
       return {
         aura: {
           name: "Harrowing Presence (Aura)",
           img: "icons/svg/aura.svg",
-          type: "auraeffects.aura",
+          disabled: false,
+          transfer: false,
+          duration: { seconds: ANCHOR_DURATION_SECONDS },
           changes: [
             { key: `flags.${MODULE_ID}.inHarrowingAura`, mode: 5, value: "true", priority: 20 },
             { key: `flags.${MODULE_ID}.auraDC`,          mode: 5, value: String(dc), priority: 20 },
           ],
-          disabled: false,
-          transfer: false,
-          duration: { seconds: ANCHOR_DURATION_SECONDS },
-          system: {
-            distanceFormula: "10",
-            disposition: -1,
-            applyToSelf: false,
-            showRadius: true,
-            color: PRESETS[damageType].auraTint,
-            opacity: 0.25,
-            script: "true",
-            collisionTypes: ["move"],
-            canStack: false,
-            combatOnly: false,
-            disableOnHidden: true,
-            evaluatePreApply: false,
-            overrideName: "",
-            bestFormula: "",
-            stashedChanges: [],
-            stashedStatuses: [],
+          flags: {
+            ActiveAuras: {
+              isAura: true,
+              aura: "Enemy",
+              radius: "10",
+              ignoreSelf: true,
+              hidden: false,
+              hostile: true,
+              onlyOnce: false,
+              wallsBlock: "system",
+              collisionTypes: ["move"],
+              inactive: false,
+              time: "None",
+            },
+            [MODULE_ID]: { auraDC: dc, source: "modification" },
           },
-          flags: { [MODULE_ID]: { auraDC: dc, source: "modification" } },
         },
       };
     },

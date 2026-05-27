@@ -7,10 +7,12 @@ import { MODULE_ID } from "./constants.js";
  */
 export async function onCombatTurnStart(actor /*, combat, combatant */) {
   if (!actor) return;
-  // The Harrowing Presence aura applies its `changes` onto in-range targets via Aura
-  // Effects, writing `flags.manifest-tulpa.inHarrowingAura` and `auraDC` onto the actor.
-  // Read via `actor.getFlag` so we hit the prepared (post-AE-application) data, not a
-  // raw marker AE that v0.1.6 expected but never created.
+  // Active Auras clones the source effect onto in-range hostile tokens; the cloned
+  // effect's `changes` write `flags.manifest-tulpa.inHarrowingAura` and `auraDC` onto
+  // the target actor's prepared data, so `actor.getFlag(...)` resolves true while the
+  // target stands inside the aura. v0.1.10 used Aura Effects as the propagation engine
+  // but the marker never landed; v0.1.11 swaps to Active Auras without changing this
+  // hook's contract — flag reads stay identical.
   if (!actor.getFlag?.(MODULE_ID, "inHarrowingAura")) return;
   const dc = Number(actor.getFlag(MODULE_ID, "auraDC"));
   if (!Number.isFinite(dc)) return;

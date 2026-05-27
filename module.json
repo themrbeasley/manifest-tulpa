@@ -2,7 +2,7 @@
   "id": "manifest-tulpa",
   "title": "Manifest Tulpa",
   "description": "Adds the 5th-level Conjuration spell 'Manifest Tulpa' with full automation: cast dialog, modification picker, summon wiring, in-combat behaviors, and lifecycle management.",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "authors": [{ "name": "themrbeasley" }],
   "compatibility": { "minimum": "13", "verified": "13.351" },
   "esmodules": ["modules/init.js"],
@@ -38,10 +38,12 @@
       { "id": "times-up", "type": "module" },
       { "id": "sequencer", "type": "module" },
       { "id": "portal-lib", "type": "module" },
+      { "id": "lib-wrapper", "type": "module" },
+      { "id": "socketlib", "type": "module" },
       {
-        "id": "auraeffects",
+        "id": "ActiveAuras",
         "type": "module",
-        "compatibility": { "minimum": "1.5.2" }
+        "compatibility": { "minimum": "0.12.7" }
       },
       { "id": "autoanimations", "type": "module" },
       { "id": "jb2a_patreon", "type": "module" }

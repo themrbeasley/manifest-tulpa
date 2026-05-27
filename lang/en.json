@@ -27,7 +27,8 @@
         "casterZeroHP": "the caster fell to 0 HP",
         "isDeath": "the caster died",
         "recast": "the caster recast the spell",
-        "manual": "the token was removed manually"
+        "manual": "the Tulpa's token was deleted",
+        "anchorRemoved": "the anchor effect was removed"
       },
       "Relentless": "{name} stands at 1 HP — Relentless triggers!",
       "LinkOpen": "Telepathic Link established between {caster} and {tulpa}.",

@@ -113,48 +113,50 @@ test("multiattack inserts a feat item the player triggers manually", () => {
   assert.match(m.item.system.description.value, /two Manifestation Strike/);
 });
 
-test("harrowingPresence.build returns an aura whose changes propagate marker flags", () => {
+test("harrowingPresence.build returns an Active-Auras-tagged effect whose changes propagate marker flags", () => {
   const m = MODIFICATIONS.harrowingPresence;
   assert.equal(m.kind, "aura+marker");
   const fakeCaster = { system: { attributes: { spell: { dc: 17 } } }, name: "Vex" };
   const built = m.build(fakeCaster, "psychic");
-  assert.equal(built.aura.type, "auraeffects.aura");
-  assert.equal(built.aura.system.distanceFormula, "10");
-  assert.equal(built.aura.system.disposition, -1);
-  assert.equal(built.aura.system.applyToSelf, false);
-  assert.equal(built.aura.system.showRadius, true);
-  assert.equal(built.aura.system.script, "true");
-  // Aura Effects 1.5.2 propagates `changes` to in-range targets; the marker flags must
-  // live there (not in a separate marker AE that v0.1.6 expected but never propagated).
+  // v0.1.11 swapped propagation engines from Aura Effects to Active Auras. The source
+  // effect is now a plain ActiveEffect (no `type: "auraeffects.aura"`); AA reads its
+  // `flags.ActiveAuras` block to know it's an aura.
+  assert.equal(built.aura.type, undefined, "v0.1.11 effect must not carry the old auraeffects.aura type discriminator");
+  // The two flag-key changes ride the cloned effect onto each in-range hostile target;
+  // the combatTurnStart hook reads them via `actor.getFlag(MODULE_ID, ...)`.
   const changeKeys = built.aura.changes.map(c => c.key).sort();
   assert.deepEqual(changeKeys, [
     "flags.manifest-tulpa.auraDC",
     "flags.manifest-tulpa.inHarrowingAura",
   ]);
   const dcChange = built.aura.changes.find(c => c.key === "flags.manifest-tulpa.auraDC");
-  assert.equal(dcChange.value, "17");
+  assert.equal(dcChange.value, "17", "DC must be the literal spell DC at cast time, not a deferred @attributes formula");
   assert.equal(dcChange.mode, 5);
   const flagChange = built.aura.changes.find(c => c.key === "flags.manifest-tulpa.inHarrowingAura");
   assert.equal(flagChange.value, "true");
   assert.equal(flagChange.mode, 5);
 });
 
-test("harrowingPresence.build ships the full Aura Effects 1.5.2 schema (v0.1.7 bug B regression)", () => {
+test("harrowingPresence.build emits the Active Auras flag block AA recognizes as an aura source", () => {
   const built = MODIFICATIONS.harrowingPresence.build(
     { system: { attributes: { spell: { dc: 15 } } } },
     "psychic",
   );
-  // collisionTypes: ["move"] is the smoking-gun field — without it Aura Effects never
-  // runs the proximity check on token movement and the marker never lands.
-  assert.deepEqual(built.aura.system.collisionTypes, ["move"]);
-  assert.equal(built.aura.system.canStack, false);
-  assert.equal(built.aura.system.combatOnly, false);
-  assert.equal(built.aura.system.disableOnHidden, true);
-  assert.equal(built.aura.system.evaluatePreApply, false);
-  assert.equal(built.aura.system.overrideName, "");
-  assert.equal(built.aura.system.bestFormula, "");
-  assert.deepEqual(built.aura.system.stashedChanges, []);
-  assert.deepEqual(built.aura.system.stashedStatuses, []);
+  // The `flags.ActiveAuras` bag is AA's discriminator. Without `isAura: true` the
+  // effect is just a normal AE on the Tulpa — never propagated to hostiles.
+  const aa = built.aura.flags.ActiveAuras;
+  assert.equal(aa.isAura, true,         "isAura is the AA propagation discriminator");
+  assert.equal(aa.aura,   "Enemy",      "aura disposition filter targets enemies of the source");
+  assert.equal(aa.radius, "10",         "radius matches manifest-tulpa.txt — 10-foot aura");
+  assert.equal(aa.ignoreSelf, true,     "self must not be re-affected");
+  assert.equal(aa.hostile, true);
+  assert.equal(aa.onlyOnce, false);
+  assert.deepEqual(aa.collisionTypes, ["move"]);
+  // The same DC must also live in our own flag bag so AA's `foundry.utils.duplicate`
+  // of the effect carries a literal number onto each clone — keeps the marker payload
+  // self-contained regardless of how the cloned effect's `changes` are applied.
+  assert.equal(built.aura.flags["manifest-tulpa"].auraDC, 15);
+  assert.equal(built.aura.flags["manifest-tulpa"].source, "modification");
 });
 
 test("iterActivities + patchActivity compose to patch every activity — v0.1.7 bug A regression", () => {

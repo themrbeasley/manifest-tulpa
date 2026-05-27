@@ -199,10 +199,13 @@ async function applyModifications(tulpa, caster, castConfig) {
   }
 
   // 4: aura+marker (Harrowing Presence).
-  // Aura Effects 1.5.2 propagates the aura's `changes` array onto in-range targets as
-  // the marker payload — the registry encodes the marker flags into `aura.changes` so
-  // `actor.getFlag(MODULE_ID, "inHarrowingAura")` resolves on the target's prepared data.
-  // No separate marker AE is needed; the v0.1.6 markerOnApply path never propagated.
+  // Active Auras (kandashi 0.12.7) propagates the cloned effect onto in-range hostile
+  // tokens. The registry returns a plain ActiveEffect tagged with `flags.ActiveAuras.*`;
+  // AA picks it up at creation time, then clones it to enemy tokens within 10 ft. The
+  // cloned effect carries our flag-key `changes` and `flags["manifest-tulpa"].auraDC`,
+  // so the `combatTurnStart` hook reads them via `actor.getFlag(...)` unchanged.
+  // v0.1.10 used Aura Effects 1.5.2 — its synthetic-actor registration path never
+  // landed the marker on hostiles. v0.1.11 swaps engines without rewriting the hook.
   const auraMods = chosen.filter(x => x.kind === "aura+marker");
   for (const m of auraMods) {
     const { aura } = m.build(caster, castConfig.damageType);

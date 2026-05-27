@@ -1,3 +1,21 @@
+.manifest-tulpa-dialog .mt-cast-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  min-height: 0;
+}
+.manifest-tulpa-dialog .mt-cast-body > section {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 0.25rem;
+}
+.manifest-tulpa-dialog .mt-cast-body > .form-footer {
+  flex: 0 0 auto;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--color-border-light-tertiary);
+}
 .manifest-tulpa-dialog .mt-row {
   display: flex;
   align-items: center;

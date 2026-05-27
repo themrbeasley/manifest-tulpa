@@ -102,8 +102,12 @@ export async function onPreDeleteToken(tokenDoc) {
 //      cascade dismissal (which is also tagged "zeroHP" in v0.1.9). v0.1.10 splits the
 //      two so the chat card can speak truthfully about which actor fell.
 //   5. anchor duration exhausted → "duration" (times-up deletes the AE on expiry).
-//   6. Otherwise "manual" — caller is most likely the GM right-clicking the AE icon.
-//      v0.1.8 fell back to "duration" here, which mislabeled GM-driven removals.
+//   6. Otherwise "anchorRemoved" — anchor AE was deleted directly (GM right-click,
+//      module-cleanup macro, anything that hits the AE without going through a token
+//      delete). v0.1.10 fell back to "manual" here, which produced the misleading
+//      "token was removed manually" chat string when the token was untouched. The
+//      `manual` reason is now reserved for the `onPreDeleteToken` path, which is the
+//      only place we actually know a token delete drove the dismissal.
 function inferReason(effect, options, caster) {
   const optReason = options?.[MODULE_ID]?.dismissReason;
   if (optReason) return optReason;
@@ -114,5 +118,5 @@ function inferReason(effect, options, caster) {
   if (typeof casterHp === "number" && casterHp <= 0) return "casterZeroHP";
   const remaining = effect.duration?.remaining;
   if (remaining != null && remaining <= 0) return "duration";
-  return "manual";
+  return "anchorRemoved";
 }
