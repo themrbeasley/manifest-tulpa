@@ -11,10 +11,26 @@ import { findSystemSummonAE } from "./dismiss-helpers.js";
  * Foundry's hook signature is `(effect, options, userId)`. We read the dismiss reason from
  * `options[MODULE_ID]` first (passed via `anchor.delete({...})` from recast/zeroHP/manual
  * paths) and only fall back to the legacy flag-on-the-anchor lookup for backward compat.
+ *
+ * v0.1.13 (smoke REG-2): the recast path now calls `performDismissCleanup` directly and
+ * passes `{ [MODULE_ID]: { skipFunnel: true } }` on the anchor delete so the hook short-
+ * circuits — the recast awaits the full cascade inline before creating the new anchor,
+ * eliminating the "undefined id" race that crashed v0.1.12 at cast-flow.js:99.
  */
 export async function onDeleteActiveEffect(effect, options /*, userId */) {
+  if (options?.[MODULE_ID]?.skipFunnel === true) return;
+  if (!effect.getFlag?.(MODULE_ID, "tulpaUuid")) return; // only anchors carry this flag
+  await performDismissCleanup(effect, options);
+}
+
+/**
+ * Public dismiss-cleanup body, callable from the recast path so we can `await` the full
+ * teardown (token delete + animation + system AE sweep + chat card) before the new cast
+ * pipeline creates its anchor. Safe to call directly without re-entering the funnel.
+ */
+export async function performDismissCleanup(effect, options = {}) {
   const tulpaUuid = effect.getFlag?.(MODULE_ID, "tulpaUuid");
-  if (!tulpaUuid) return; // only anchors carry this flag
+  if (!tulpaUuid) return;
   const castConfig = effect.getFlag(MODULE_ID, "castConfig") ?? {};
   const caster = effect.parent;
   const tokenId = effect.getFlag?.(MODULE_ID, "tulpaTokenId");

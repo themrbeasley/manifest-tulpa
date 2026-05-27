@@ -103,6 +103,10 @@ function scrubSpell() {
   const s = JSON.parse(readFileSync(SPELL_SRC, "utf8"));
   s._id = PACKED_SPELL_ID;
 
+  // v0.1.13: lock the shipped icon to the bundled asset. World exports inherit
+  // whatever the user's prep slot was pointing at; the scrub canonicalizes it.
+  s.img = "modules/manifest-tulpa/assets/manifest_tulpa_icon.webp";
+
   // Pull RAW spell text in.
   const raw = readFileSync(SPELL_TXT, "utf8");
   s.system ??= {};

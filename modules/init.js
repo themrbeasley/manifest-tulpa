@@ -1,5 +1,5 @@
 import { MODULE_ID } from "./constants.js";
-import { onPostUseActivity } from "./cast-flow.js";
+import { onPreUseActivity, onPostSummon } from "./cast-flow.js";
 import { onCombatStart, onUpdateCombatant } from "./initiative.js";
 import { restoreTulpaHpWatchers } from "./tulpa-hp-watcher.js";
 import { onCombatRecovery } from "./harrowing-presence-hook.js";
@@ -16,7 +16,14 @@ Hooks.once("ready", async () => {
   console.log(`${MODULE_ID} | ready`);
   if (globalThis.__manifestTulpaHooksRegistered) return;
   globalThis.__manifestTulpaHooksRegistered = true;
-  Hooks.on("dnd5e.postUseActivity",  onPostUseActivity);
+  // v0.1.13 (smoke REG-1): switched from `dnd5e.postUseActivity` to a paired
+  // preUseActivity + postSummon. postUseActivity uses `Hooks.call` (short-circuit on
+  // first `return false`), and other modules' handlers silently blocked our cast flow.
+  // postSummon uses `Hooks.callAll` — never short-circuits — and fires from both the
+  // inline placement and chat-card Summon-button paths. preUseActivity carries the
+  // slot level we need for the modification-slot budget.
+  Hooks.on("dnd5e.preUseActivity",   onPreUseActivity);
+  Hooks.on("dnd5e.postSummon",       onPostSummon);
   Hooks.on("dnd5e.combatRecovery",   onCombatRecovery);
   Hooks.on("combatStart",            onCombatStart);
   Hooks.on("updateCombatant",        onUpdateCombatant);

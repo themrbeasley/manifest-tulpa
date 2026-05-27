@@ -3,7 +3,13 @@ import { MODULE_ID } from "./constants.js";
 
 // Hard cap so a missing/unindexed Sequencer asset can't hang the cast or dismiss flows.
 // Cast/dismiss must continue even if the visual effect never resolves.
-const ANIM_TIMEOUT_MS = 5000;
+// v0.1.13 (smoke A7): raised 5000→15000ms. The dismiss path uses `.waitUntilFinished(-200)`
+// on JB2A assets whose intrinsic playback length can comfortably exceed 5s (the longer
+// thunderwave-style preserves run 6–9s); the old cap was firing the safety timeout on
+// healthy assets and printing a spurious "dismiss animation timed out" warning every
+// dismissal. 15s is still well under any reasonable user attention budget for a
+// stuck-animation safety net, while clearing all of our shipped dismiss presets.
+const ANIM_TIMEOUT_MS = 15000;
 
 function warn(err, label) {
   console.warn(`${MODULE_ID} | animation ${label} failed:`, err);
@@ -22,7 +28,7 @@ function withTimeout(promise, label) {
 
 // Sequencer.Database.entryExists is the cheap pre-flight: when the jb2a asset isn't
 // indexed (no Patreon module, asset misnamed, etc.) we can skip the Sequence entirely
-// and avoid the full 5s timeout wait that v0.1.7's smoke report flagged as a UX papercut.
+// and avoid the full ANIM_TIMEOUT_MS wait that v0.1.7's smoke report flagged as a UX papercut.
 // Returns false only when the database is loaded *and* the entry is confirmed missing —
 // any other state (DB not ready, function absent) returns true so we still attempt the
 // play and fall back to the timeout safety net.

@@ -5,15 +5,43 @@ import { postCast, postWarning } from "./chat-cards.js";
 import { playManifest } from "./animations.js";
 import { armTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 import { alignTulpaInitiative } from "./initiative.js";
-import { pickSummonedFromResults, scanPlaceablesForSummon } from "./locate-helpers.js";
+import { performDismissCleanup } from "./dismiss-flow.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
 
+// v0.1.13 (smoke REG-1): slot level captured at preUseActivity so postSummon can read
+// it without depending on `usageConfig` (which dnd5e doesn't pass to postSummon). Keyed
+// by activity.uuid — entries are deleted as soon as postSummon consumes them, so the
+// map never accumulates across casts. A chat-button "Summon" press on a deferred cast
+// won't have a capture (preUseActivity already fired and we cleared it on the inline
+// path); in that case we fall back to slot 5, which is the spell's base level.
+const SLOT_CAPTURE = new Map();
+
 /**
- * dnd5e.postUseActivity hook handler — Phase 1 + Phase 3 in one entry point.
- * Phase 2 (the actual summon) is dnd5e's native flow and has already run by now.
+ * dnd5e.preUseActivity hook handler — captures the selected slot for our spell so the
+ * later postSummon handler can compute the modification-slot budget. v0.1.12 lived on
+ * postUseActivity, which `Hooks.call` short-circuits when any prior handler returns
+ * false (AutoAnimations, midi-qol, and world macros routinely do). The smoke for
+ * v0.1.12 (REG-1) proved this: a MT-WRAP wrapper confirmed the slot was consumed and
+ * the chat card posted, but our handler never ran. We've moved the entry point to
+ * `dnd5e.postSummon` (which uses `Hooks.callAll` — immune to short-circuit) and split
+ * slot capture into this preUseActivity helper.
  */
-export async function onPostUseActivity(activity, usageConfig, results) {
+export function onPreUseActivity(activity, usageConfig /*, dialogConfig, messageConfig */) {
+  if (activity?.type !== "summon") return;
+  if (activity.item?.system?.identifier !== SPELL_IDENTIFIER) return;
+  SLOT_CAPTURE.set(activity.uuid, parseSlotLevel(usageConfig));
+}
+
+/**
+ * dnd5e.postSummon hook handler — Phase 1 (dialog) + Phase 3 (post-cast wiring).
+ * Phase 2 (token placement) has already run by the time we get here. Signature:
+ * `(activity, profile, createdTokens, options)`. Fires from BOTH paths in dnd5e 5.2.5:
+ *   • inline placement during `use()`: `_finalizeUsage` → `placeSummons` → `Hooks.callAll("dnd5e.postSummon", ...)`
+ *   • chat-card "Summon" button: `SummonActivity.#placeSummons` → same `placeSummons` → same hook call
+ * `createdTokens` is the TokenDocument[] dnd5e just created on the canvas.
+ */
+export async function onPostSummon(activity, _profile, createdTokens /*, options */) {
   if (activity?.type !== "summon") return;
   // The scrub script (scrub-source.mjs) sets system.identifier; localization-safe.
   if (activity.item?.system?.identifier !== SPELL_IDENTIFIER) return;
@@ -22,27 +50,28 @@ export async function onPostUseActivity(activity, usageConfig, results) {
   if (!caster) return;
 
   // ---- Phase 1: pre-cast dialog ----
-  const slotLevel = parseSlotLevel(usageConfig);
+  const slotLevel = SLOT_CAPTURE.get(activity.uuid) ?? 5;
+  SLOT_CAPTURE.delete(activity.uuid);
   const availableSlots = Math.min(6, 2 + Math.max(0, slotLevel - 5));
 
-  // Trigger #4 — if a previous anchor exists, delete it first (dismisses the previous Tulpa).
-  // Pass `dismissReason: "recast"` via delete options so the dismiss-flow chat card
-  // credits "recast" instead of falling through to the generic inference. v0.1.6
-  // shipped this without a tag; v0.1.7 added an awaited `setFlag` before delete;
-  // v0.1.9 switches to options-pass-through so the reason rides the same hook call
-  // and can't race with the delete.
+  // Trigger #4 — if a previous anchor exists, tear it down INLINE before continuing.
+  // v0.1.12 awaited only `previous.delete(...)`, which returned before the
+  // `deleteActiveEffect` hook handler finished its token/system-AE cascade. The cast
+  // pipeline then raced with the in-flight cleanup and crashed at the dismiss chat
+  // card with `Error: undefined id [GRhO38Y2RLiYL8lj]` (smoke REG-2 in v0.1.12).
+  // v0.1.13: call `performDismissCleanup` directly (awaits the full teardown), then
+  // delete the anchor with `skipFunnel: true` so the hook handler no-ops.
   const previous = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid"));
   if (previous) {
-    await previous.delete({ [MODULE_ID]: { dismissReason: "recast" } });
+    const dismissOpts = { [MODULE_ID]: { dismissReason: "recast" } };
+    await performDismissCleanup(previous, dismissOpts);
+    await previous.delete({ [MODULE_ID]: { dismissReason: "recast", skipFunnel: true } });
   }
 
-  // Capture the freshly-summoned Tulpa BEFORE the dialog opens. dnd5e's SummonActivity
-  // has already placed the TokenDocument on `results.summoned` by the time postUseActivity
-  // fires — capturing now means an abort path always has a handle to delete, even if the
-  // dialog wait is long. v0.1.11 captured AFTER the dialog *and* read the stale key
-  // `results.createdTokens` (which is always undefined in 5.2.5), so cancel-cleanup
-  // fell through to a canvas scan that couldn't reliably find the orphan → smoke Bug 2.
-  const token = locateSummonedTulpa(results, caster);
+  // postSummon hands us the TokenDocument[] directly (see `summon.mjs` ~L222). No
+  // need to scan canvas placeables or read `results.summoned` — both v0.1.11 fallback
+  // paths are gone with v0.1.13.
+  const token = Array.isArray(createdTokens) ? createdTokens[0] ?? null : null;
 
   const selection = await openCastDialog({ availableSlots });
   if (!selection) {
@@ -107,18 +136,6 @@ function parseSlotLevel(usageConfig) {
   }
   if (typeof usageConfig?.scaling === "number") return 5 + usageConfig.scaling;
   return 5;
-}
-
-// Returns the freshly-summoned Tulpa as a TokenDocument (or null). dnd5e 5.2.5 stores
-// the created TokenDocument[] under `results.summoned` (see system source:
-// `module/documents/activity/summon.mjs` ~L113). The canvas-scan path is kept as a
-// defensive fallback only — it returns a placeable, which we normalize to its document
-// so downstream `token.delete()` / `token.actor` / Sequencer calls all work the same.
-function locateSummonedTulpa(results, caster) {
-  const fromResults = pickSummonedFromResults(results);
-  if (fromResults) return fromResults;
-  const placeable = scanPlaceablesForSummon(canvas.tokens.placeables, caster.uuid);
-  return placeable?.document ?? null;
 }
 
 // Single-writer for the Manifestation Strike weapon. The heavy lifting (Set→array
@@ -224,7 +241,7 @@ async function applyModifications(tulpa, caster, castConfig) {
 
 async function abortAndCleanup(token, message) {
   if (token) {
-    // `token` is a TokenDocument (see locateSummonedTulpa), so call `.delete()` directly.
+    // `token` is the TokenDocument from postSummon's `createdTokens[0]`.
     try { await token.delete(); }
     catch (err) { console.warn(`${MODULE_ID} | abort token cleanup failed:`, err); }
   }
