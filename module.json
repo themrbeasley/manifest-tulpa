@@ -24,6 +24,14 @@
       "system": "dnd5e"
     }
   ],
+  "packFolders": [
+    {
+      "name": "Tulpa Compendia",
+      "sorting": "m",
+      "color": "#FF6400",
+      "packs": ["manifest-tulpa-spells", "manifest-tulpa-actors"]
+    }
+  ],
   "relationships": {
     "systems": [
       {
