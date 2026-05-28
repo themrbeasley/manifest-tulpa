@@ -4,6 +4,50 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.15] — 2026-05-27
+
+> Hotfix for v0.1.13 — but the root cause turned out to be much worse than the visible R36 symptom suggested, and the fix is structural rather than line-level. **v0.1.13 silently regressed eight shipped-spell fields**, not one. The earlier framing in this changelog draft ("patch the generator, add tests") was wrong: the generator itself was the bug. This release **deletes [scripts/scrub-source.mjs](scripts/scrub-source.mjs) entirely**, restores the eight regressed fields from v0.1.12 (the last known-good shipped artifact), moves the pre-development `fvtt-*.json` world exports to [`archive/`](archive/) so the next person sees a `README.md` warning instead of an enticing "scrub input" file, locks every previously-silent field with regression tests, and rewrites the [CLAUDE.md](CLAUDE.md) standing order to reflect the new reality (`_source/` is hand-edited canonical JSON; no generator exists; `fvtt-*` files are historical and must not be parsed). The v0.1.13 release process re-ran `npm run scrub` to bake in the new icon path, and the scrub blindly copied every field it didn't explicitly canonicalize from a pre-development world export whose values had been wrong since v0.1.2 (wrong range, wrong target type, wrong material component, wrong consumption flag, plus the v0.1.11 R36 header fix). The "fix-at-generator-layer" principle (v0.1.11→v0.1.13 R36 scar) still applies — but when the generator is what re-reads bad inputs, the fix is to delete the generator.
+
+### Fixed
+
+- **Eight silently regressed shipped-spell fields restored (CRITICAL — v0.1.13 silent regression scope).** A `git diff v0.1.12 -- _source/manifest-tulpa-spells/Item.manifest-tulpa.json` against the v0.1.13 release confirmed the scrub re-write clobbered every field it didn't explicitly canonicalize. Restored from `v0.1.12` and re-applied the v0.1.13 icon path on top:
+  - `system.range.value`: `null` → `30` (spell text says "Range 30 feet"; v0.1.13 lost it because the pre-dev export had `units: "self"`)
+  - `system.range.units`: `"self"` → `"ft"`
+  - `system.target.affects.type`: `"self"` → `"space"` (a 30-ft self-targeted spell is incoherent; dnd5e's slot UI was rendering the wrong target shape)
+  - `system.materials.value`: pre-dev "a lock of your own hair, a drop of your blood, and a small gem worth 100 GP" → canonical "a crystal shard imbued with your psychic resonance, worth at least 100 GP" (the spell text was rewritten during development; the pre-dev export was never updated)
+  - `system.materials.consumed`: `true` → `false` (the spell does not consume the shard — re-castable across the day with the same focus)
+  - `system.materials.cost`: missing → `100` (matches the GP value declared in `materials.value`)
+  - Summon-activity `range.override`: `false` → `true` (without override, the activity inherits dnd5e's default summon range, not the spell's 30 ft)
+  - Summon-activity `target.affects.type`: stripped entirely → `"space"` with `target.override: true`
+  - **Also**: the R36 header-duplication fix from v0.1.11 (`description.value` opens with `<p>You crystallize a fragment...`, no Level 5 / Casting Time / Range / Components / Duration header block) was restored at the same time, since v0.1.13's scrub had silently re-baked it in too — this is the symptom the v0.1.13 smoke surfaced and that originally kicked off this release.
+- **R36 (spell description duplicates the front-matter header)** is fixed as part of the eight-field restore above. The header block lived inside the broader silent-regression set, not as a standalone bug.
+
+### Removed
+
+- **`scripts/scrub-source.mjs` deleted.** The script's design was the bug: it took pre-development `fvtt-Actor-tulpa-*.json` and `fvtt-Item-manifest-tulpa-*.json` world exports as authoritative input, applied a handful of canonicalizations on top (icon path, identifier, summon profile UUID, rules era, scaling-allowed flag), and wrote everything else through verbatim — including all eight regressed fields above. The pre-dev exports were stale from the moment the spell text was rewritten in early development; every shipped artifact built from them inherited the staleness, masked only because the validator and tests didn't cover the un-canonicalized fields. There is no replacement script. `_source/manifest-tulpa-spells/Item.manifest-tulpa.json` and `_source/manifest-tulpa-actors/Actor.tulpa.json` are now hand-edited canonical JSON; future spell-shape changes happen by editing those files directly and running `npm test && npm run validate && npm run build:packs`.
+- **`"scrub": "node scripts/scrub-source.mjs"` removed from `package.json` scripts block.** `npm run scrub` no longer exists; quick-command callers will get an `npm ERR! missing script` instead of a silent re-clobber.
+- **Pre-development `fvtt-*.json` world exports moved from repo root to [`archive/`](archive/).** Six files: `fvtt-Actor-tulpa-rfi8EPvTDFduYlW5.json`, `fvtt-Item-manifest-tulpa-YwUNZpFtX3dwNQPx.json`, `fvtt-ActiveEffect-harrowing-presence.json`, and three `fvtt-Macro-*.json` (the macros are superseded by `modules/*.js` per architectural invariant 4). Added [`archive/README.md`](archive/README.md) explaining the files are pre-v0.1.0 brainstorming exports, have been fundamentally wrong since v0.1.2, and must not be parsed by any build/validate/test/release tool. They remain in-tree only for git-history grep-ability.
+
+### Added
+
+- **[tests/spell-source.test.mjs](tests/spell-source.test.mjs) — 14 regression locks for every previously-silent shipped-spell field.** Replaces the v0.1.15-draft `tests/scrub-spell.test.mjs` (which tested the now-deleted generator's `stripFrontMatter` helper). The new tests assert directly against the shipped `_source/` files — the canonical artifact — rather than against any generator output. Locks:
+  - `_id` `manifesttulpaS01` (spell) and `manifesttulpaA01` (actor) — the 16-char canonical ids the summon profile UUID points at (Foundry id-format scar from v0.1.2).
+  - `system.identifier` `manifest-tulpa` — the locale-safe key [modules/cast-flow.js](modules/cast-flow.js) gates on at `preUseActivity`.
+  - `system.source.rules` `"2024"` — declares the dnd5e 2024 rules era.
+  - `img` `modules/manifest-tulpa/assets/manifest_tulpa_icon.webp` — the v0.1.13 icon path, preserved through the restore.
+  - **v0.1.13 silent-regression locks** for the eight fields above: `range.value`/`range.units`, `target.affects.type`, `materials.value` (must contain "crystal shard" and "100 GP", must NOT contain the pre-dev "lock of hair"/"drop of blood" strings), `materials.consumed: false`, `materials.cost: 100`, summon-activity `range.override: true`, summon-activity `target.affects.type: "space"` with `target.override: true`, summon profile UUID, `consumption.scaling.allowed: false`.
+  - **R36 description-header lock** — `description.value` contains none of "Level 5 Conjuration" / "Casting Time:" / "Range: 30 feet" / "Components:" / "Duration: 1 Hour" and opens with `<p>You crystallize a fragment`.
+  - **Anti-generator lock** — `existsSync("scripts/scrub-source.mjs")` must be `false`. The inline failure message explains why the script was deleted and what to do instead (one-shot scripts under `scripts/` must be deleted after use).
+- **`"Source-tree discipline — STANDING ORDER"` section in [CLAUDE.md](CLAUDE.md).** Replaces the previous "Generator/output discipline" section, which was itself a v0.1.15-draft response to R36 and assumed a generator existed. New section spells out: (a) `_source/` is hand-edited canonical JSON and no generator regenerates it from `fvtt-*` exports; (b) `archive/` files are pre-v0.1.0 historical reference and must not be read by build/validate/test/release tooling; (c) the three-step rule for any shipped-artifact change (edit `_source/` directly → add or update an assertion in `tests/spell-source.test.mjs` or `scripts/validate-pack.js` → run `npm test && npm run validate && npm run build:packs`); (d) the full locked-fields table mapping each field to its test or validator.
+
+### Internal
+
+- **Test count 57 → 71 (+14 net).** Removed: scrub-spell.test.mjs draft (uncommitted, never shipped). Added: spell-source.test.mjs (14 cases). All 71 cases pass under `node --test`.
+- **`modules/cast-flow.js` comment refresh.** Line 46 used to read `// The scrub script (scrub-source.mjs) sets system.identifier; localization-safe.`; now reads `// _source/manifest-tulpa-spells/Item.manifest-tulpa.json carries this identifier; locale-safe.` — no behavioral change, just removes a stale generator reference that would mislead future readers.
+- **`README.md` quick commands no longer list `npm run scrub`.**
+- **Architectural invariant 4 in CLAUDE.md updated** to reference `archive/` instead of the repo root for the `fvtt-Macro-*.json` files.
+- **`package.json` version stays in sync with `module.json`.** Both at `0.1.15`.
+
 ## [0.1.14] — 2026-05-27
 
 > Hotfix for v0.1.13. The custom spell icon shipped in v0.1.13 404'd at runtime (`GET /modules/manifest-tulpa/assets/manifest_tulpa_icon.webp 404 (Not Found)`) and the spell rendered with Foundry's broken-image glyph. Root cause: the release workflow's zip step ([.github/workflows/release.yml](.github/workflows/release.yml)) listed `modules/ styles/ lang/ templates/ packs/` but not `assets/`, so the icon file was never bundled into `manifest-tulpa.zip` even though it landed in git and `_source/manifest-tulpa-spells/Item.manifest-tulpa.json` referenced it. No runtime code changes — workflow-only fix plus the version bumps the release pipeline needs.

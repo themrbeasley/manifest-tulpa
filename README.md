@@ -33,8 +33,7 @@ https://github.com/themrbeasley/manifest-tulpa/releases/latest/download/module.j
 ```bash
 npm install
 npm test
-npm run scrub        # rebuild _source/ from world exports
-npm run validate     # pre-release sanity check
+npm run validate     # pre-release sanity check on hand-edited _source/
 npm run build:packs  # convert _source/ → packs/ (LevelDB)
 ```
 

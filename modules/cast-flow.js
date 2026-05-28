@@ -43,7 +43,7 @@ export function onPreUseActivity(activity, usageConfig /*, dialogConfig, message
  */
 export async function onPostSummon(activity, _profile, createdTokens /*, options */) {
   if (activity?.type !== "summon") return;
-  // The scrub script (scrub-source.mjs) sets system.identifier; localization-safe.
+  // _source/manifest-tulpa-spells/Item.manifest-tulpa.json carries this identifier; locale-safe.
   if (activity.item?.system?.identifier !== SPELL_IDENTIFIER) return;
 
   const caster = activity.item.actor;

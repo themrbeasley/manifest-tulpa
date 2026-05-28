@@ -1,12 +1,11 @@
 {
   "name": "manifest-tulpa",
   "private": true,
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Build tooling for the Manifest Tulpa Foundry module.",
   "type": "module",
   "scripts": {
     "build:packs": "node scripts/build-packs.mjs",
-    "scrub": "node scripts/scrub-source.mjs",
     "validate": "node scripts/validate-pack.js",
     "test": "node --test"
   },
