@@ -148,3 +148,63 @@ test("scripts/scrub-source.mjs does not exist (deleted v0.1.15 — see CLAUDE.md
     "scripts/scrub-source.mjs was deleted in v0.1.15 because it re-read fvtt-* pre-dev exports as authoritative input and silently regressed _source/. Do not restore it. _source/ is hand-edited canonical JSON; if you need a one-off transform, write it as a one-shot script under scripts/ and DELETE IT IMMEDIATELY after use."
   );
 });
+
+// --- v0.1.16 description-structure locks ---
+// description.value was restructured from a flat <p>-wall into:
+//   * a 6-row stat-block table with [[lookup ...]] enrichers on AC and HP
+//   * <h4> section headers for the six modification categories
+//   * <ul><li><strong>NAME</strong>...</li> bullet lists for the named options
+// description.chat was populated with a two-paragraph cast-card summary.
+// Each assertion below locks one structural element. If a future edit (or a
+// future agent's "let me just regenerate this" rationalization) flattens the
+// HTML or wipes the chat field, npm test fails before .github/workflows/release.yml
+// can build packs. v0.1.13 silent-regression class extension.
+
+test("spell description.value contains the stat-block table (v0.1.16 structure lock)", () => {
+  const v = spell.system?.description?.value ?? "";
+  assert.match(v, /<table>/, "description.value must contain the stat-block <table>");
+  assert.match(v, /<th>AC<\/th>/, "stat-block table must have an AC row");
+  assert.match(v, /<th>HP maximum<\/th>/, "stat-block table must have an HP maximum row");
+});
+
+test("spell description.value contains the two scoped lookup enrichers (v0.1.16 enricher lock)", () => {
+  const v = spell.system?.description?.value ?? "";
+  assert.match(v, /\[\[lookup @attributes\.spellmod\]\]\{your spellcasting ability modifier\}/,
+    "AC line must use the @attributes.spellmod lookup with prose fallback");
+  assert.match(v, /\[\[13 \+ @attributes\.spellmod\]\]\{total\}/,
+    "AC line must compute the total with the {total} fallback");
+  assert.match(v, /\[\[40 \+ 5 \* @details\.level\]\]\{40 \+ 5 × your character level\}/,
+    "HP line must compute 40 + 5 × @details.level with prose fallback");
+});
+
+test("spell description.value contains all six modification-section <h4> headers (v0.1.16 structure lock)", () => {
+  const v = spell.system?.description?.value ?? "";
+  for (const section of ["Morphic", "Combat", "Resistance", "Movement", "Skill Affinity", "Special"]) {
+    assert.match(v, new RegExp(`<h4>${section}<\\/h4>`), `description.value must contain <h4>${section}</h4>`);
+  }
+});
+
+test("spell description.value bolds a representative sample of modification names (v0.1.16 structure lock)", () => {
+  // A spot-check of one mod per section — if these go missing the list-flatten regression has happened.
+  const v = spell.system?.description?.value ?? "";
+  for (const mod of ["Reinforced Form", "Empowered Strikes", "Fly Speed", "Telepathic Link"]) {
+    assert.match(v, new RegExp(`<strong>${mod}<\\/strong>`), `description.value must bold "${mod}"`);
+  }
+});
+
+test("spell description.chat is populated, brief, and on-topic (v0.1.16 chat-card lock)", () => {
+  const c = spell.system?.description?.chat ?? "";
+  assert.ok(c.length > 0, "description.chat must not be empty (overrides description.value in cast card)");
+  assert.ok(c.length < 1500, `description.chat must stay brief; current length ${c.length} exceeds 1500-char budget`);
+  assert.match(c, /Tulpa/, "description.chat must mention the Tulpa");
+  assert.match(c, /dismiss/i, "description.chat must cover dismissal triggers (rationale for picking Option B during brainstorming)");
+});
+
+test("spell description.chat also avoids the R36 front-matter header strings", () => {
+  // R36 originally checked only description.value. v0.1.16 introduces description.chat as a second
+  // surface that could regress in the same way; extend the same lock to it.
+  const c = spell.system?.description?.chat ?? "";
+  for (const needle of HEADER_NEEDLES) {
+    assert.ok(!c.includes(needle), `description.chat must not contain header line ${JSON.stringify(needle)}`);
+  }
+});
