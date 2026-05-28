@@ -76,11 +76,16 @@ What `_source/` is **not**:
 | Spell | summon activity `profiles[].uuid` | `Compendium.manifest-tulpa.manifest-tulpa-actors.Actor.manifesttulpaA01` | validator + tests/spell-source.test.mjs |
 | Spell | summon activity `consumption.scaling.allowed` | `false` | validator + tests/spell-source.test.mjs |
 | Spell | `system.description.value` | hand-maintained HTML from [manifest-tulpa.txt](manifest-tulpa.txt); must NOT contain the front-matter header (Manifest Tulpa / Level 5 Conjuration / Casting Time / Range / Components / Duration) | tests/spell-source.test.mjs (R36 lock) |
+| Spell | `system.description.value` (table) | contains `<table>`, `<th>AC</th>`, `<th>HP maximum</th>` | tests/spell-source.test.mjs (v0.1.16 structure lock) |
+| Spell | `system.description.value` (enrichers) | contains `[[lookup @attributes.spellmod]]{...}` and `[[40 + 5 * @details.level]]{...}` | tests/spell-source.test.mjs (v0.1.16 enricher lock) |
+| Spell | `system.description.value` (sections) | contains `<h4>` for Morphic / Combat / Resistance / Movement / Skill Affinity / Special | tests/spell-source.test.mjs (v0.1.16 structure lock) |
+| Spell | `system.description.value` (mod names) | `<strong>` on Reinforced Form, Empowered Strikes, Fly Speed, Telepathic Link (sample) | tests/spell-source.test.mjs (v0.1.16 structure lock) |
+| Spell | `system.description.chat` | non-empty, < 1500 chars, mentions Tulpa + dismiss; no R36 header strings | tests/spell-source.test.mjs (v0.1.16 chat-card lock) |
 | Tooling | `scripts/scrub-source.mjs` | absent | tests/spell-source.test.mjs (anti-generator lock) |
 
 **If you need to change a locked field**, edit `_source/` and update the matching assertion in `tests/spell-source.test.mjs` in the same commit. Never relax an assertion to make a test pass without first asking "is the new value actually correct?"
 
-**Anti-pattern: rebuilding the scrub script.** It will read fvtt-* exports (or even `_source/` itself!) and write back, which kills your hand edits or re-introduces the pre-dev wrong values. v0.1.13 cost two patch releases (v0.1.13 → v0.1.15) because of exactly this. If you need a one-shot transform across the source tree, write it as a one-off script, run it once, and delete the script in the same commit.
+**Anti-pattern: rebuilding the scrub script.** It will read fvtt-* exports (or even `_source/` itself!) and write back, which kills your hand edits or re-introduces the pre-dev wrong values. v0.1.13 cost two patch releases (v0.1.13 → v0.1.15) because of exactly this. If you need a one-shot transform across the source tree, write it as a one-off script, run it once, and delete the script in the same commit. **v0.1.16 is another precedent:** the description-polish work was implemented entirely by hand-editing `_source/manifest-tulpa-spells/Item.manifest-tulpa.json` and adding five new structure-lock tests in the same commit. No new script, no regenerator, no round-trip — just edit, lock, ship.
 
 ## Architectural invariants (load-bearing — do not violate)
 
