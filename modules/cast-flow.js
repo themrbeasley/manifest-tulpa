@@ -5,7 +5,7 @@ import { postCast, postWarning } from "./chat-cards.js";
 import { playManifest } from "./animations.js";
 import { armTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 import { alignTulpaInitiative } from "./initiative.js";
-import { performDismissCleanup } from "./dismiss-flow.js";
+import { findPreviousAnchor } from "./dismiss-helpers.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
 
@@ -16,6 +16,25 @@ const SPELL_IDENTIFIER = "manifest-tulpa";
 // won't have a capture (preUseActivity already fired and we cleared it on the inline
 // path); in that case we fall back to slot 5, which is the spell's base level.
 const SLOT_CAPTURE = new Map();
+
+// v0.1.17 (Bug #1 recast fix): when casting over a live Tulpa, we tear the OLD one down
+// in `onPreUseActivity` — BEFORE dnd5e creates the new token — and stash the in-flight
+// teardown promise here, keyed by activity.uuid. `onPostSummon` awaits it (then deletes
+// the entry) so the new cast pipeline never races a half-torn-down old Tulpa. Doing the
+// dismissal in preUseActivity (after slot selection, before the placement crosshair) is
+// what guarantees the old token + anchor + "Summon:" AE are gone before the new token
+// exists — so midi-qol gives the new token a FRESH "Summon:" AE that nothing else is
+// pinned to, instead of reusing-by-name the old one and dragging the new token down.
+// See the recast-fix scratchpad and smoke report Bug #1 for the full cascade.
+const RECAST_DISMISS = new Map();
+
+// Options for the recast pre-dismissal. NO skipFunnel — we WANT the funnel to run the
+// cleanup; routing through `anchor.delete()` removes the anchor from the collection
+// before the deleteActiveEffect hook fires, so the old token's delete →
+// onPreDeleteToken → findPreviousAnchor returns null → the funnel does NOT re-enter
+// (that re-entrancy was the v0.1.12/v0.1.13 double-delete crash). skipAnimation keeps the
+// teardown fast (no up-to-15s dismiss animation) so it finishes before the new token.
+const RECAST_DISMISS_OPTIONS = { [MODULE_ID]: { dismissReason: "recast", skipAnimation: true } };
 
 /**
  * dnd5e.preUseActivity hook handler — captures the selected slot for our spell so the
@@ -31,6 +50,26 @@ export function onPreUseActivity(activity, usageConfig /*, dialogConfig, message
   if (activity?.type !== "summon") return;
   if (activity.item?.system?.identifier !== SPELL_IDENTIFIER) return;
   SLOT_CAPTURE.set(activity.uuid, parseSlotLevel(usageConfig));
+
+  // Trigger #4 (recast) — if a Tulpa is already live, tear the OLD one down NOW, before
+  // dnd5e consumes the slot and creates the new token. preUseActivity fires AFTER slot
+  // selection but BEFORE the placement crosshair, so the old token + anchor + "Summon:" AE
+  // are fully gone before the new token exists. We dismiss through the normal funnel
+  // (`anchor.delete(...)`, NOT performDismissCleanup directly): `.delete()` removes the
+  // anchor from the collection before the deleteActiveEffect hook runs cleanup, so the old
+  // token's delete → onPreDeleteToken → findPreviousAnchor returns null → no funnel
+  // re-entrancy. Fire-and-forget (preUseActivity is a sync `Hooks.call` handler and must
+  // not return false — invariant #2); we stash the promise for onPostSummon to await.
+  // v0.1.16 ran this teardown in onPostSummon AFTER the new token existed, which let
+  // midi-qol pin the new token to the old "Summon:" AE and then deleted that AE — killing
+  // BOTH tulpas and crashing the cast (smoke Bug #1 / REG-2 recurrence).
+  const caster = activity.item?.actor;
+  const previous = findPreviousAnchor(caster);
+  if (previous) {
+    const teardown = previous.delete(RECAST_DISMISS_OPTIONS)
+      .catch(err => console.warn(`${MODULE_ID} | recast pre-dismiss of previous Tulpa failed:`, err));
+    RECAST_DISMISS.set(activity.uuid, teardown);
+  }
 }
 
 /**
@@ -54,18 +93,16 @@ export async function onPostSummon(activity, _profile, createdTokens /*, options
   SLOT_CAPTURE.delete(activity.uuid);
   const availableSlots = Math.min(6, 2 + Math.max(0, slotLevel - 5));
 
-  // Trigger #4 — if a previous anchor exists, tear it down INLINE before continuing.
-  // v0.1.12 awaited only `previous.delete(...)`, which returned before the
-  // `deleteActiveEffect` hook handler finished its token/system-AE cascade. The cast
-  // pipeline then raced with the in-flight cleanup and crashed at the dismiss chat
-  // card with `Error: undefined id [GRhO38Y2RLiYL8lj]` (smoke REG-2 in v0.1.12).
-  // v0.1.13: call `performDismissCleanup` directly (awaits the full teardown), then
-  // delete the anchor with `skipFunnel: true` so the hook handler no-ops.
-  const previous = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid"));
-  if (previous) {
-    const dismissOpts = { [MODULE_ID]: { dismissReason: "recast" } };
-    await performDismissCleanup(previous, dismissOpts);
-    await previous.delete({ [MODULE_ID]: { dismissReason: "recast", skipFunnel: true } });
+  // Trigger #4 (recast) — the OLD Tulpa's teardown was kicked off in onPreUseActivity
+  // (before this new token existed). Await it here so the new cast pipeline never races a
+  // half-torn-down old Tulpa (the v0.1.12 REG-2 crash mode). The stored promise already
+  // has a .catch, so it never rejects; if no recast was in flight there's nothing to wait
+  // on. The old "Summon:" AE is already gone by now, so the new token midi created for
+  // this cast is pinned to its own fresh AE — deleting the old one can't touch it.
+  const recastTeardown = RECAST_DISMISS.get(activity.uuid);
+  if (recastTeardown) {
+    RECAST_DISMISS.delete(activity.uuid);
+    await recastTeardown;
   }
 
   // postSummon hands us the TokenDocument[] directly (see `summon.mjs` ~L222). No

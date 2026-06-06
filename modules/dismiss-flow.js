@@ -12,10 +12,17 @@ import { findSystemSummonAE } from "./dismiss-helpers.js";
  * `options[MODULE_ID]` first (passed via `anchor.delete({...})` from recast/zeroHP/manual
  * paths) and only fall back to the legacy flag-on-the-anchor lookup for backward compat.
  *
- * v0.1.13 (smoke REG-2): the recast path now calls `performDismissCleanup` directly and
- * passes `{ [MODULE_ID]: { skipFunnel: true } }` on the anchor delete so the hook short-
- * circuits — the recast awaits the full cascade inline before creating the new anchor,
- * eliminating the "undefined id" race that crashed v0.1.12 at cast-flow.js:99.
+ * v0.1.17 (smoke Bug #1): the recast path now dismisses the previous Tulpa THROUGH this
+ * funnel from `cast-flow.js` onPreUseActivity — `anchor.delete({ dismissReason: "recast",
+ * skipAnimation: true })` — BEFORE the new token exists. Routing through `.delete()` (not a
+ * direct `performDismissCleanup` call) removes the anchor from the collection before this
+ * hook fires, so the subsequent old-token delete → onPreDeleteToken → findPreviousAnchor
+ * returns null and the funnel does NOT re-enter. The `skipFunnel` guard below is retained
+ * as defense-in-depth (any future direct-cleanup caller can still suppress re-entry); the
+ * recast path no longer needs it. This replaced the v0.1.13 approach (direct
+ * performDismissCleanup + skipFunnel anchor delete in onPostSummon), which tore the old
+ * Tulpa down AFTER the new token existed and let midi-qol's shared "Summon:" AE drag the
+ * new token down — killing both tulpas and crashing the cast (the v0.1.16 regression).
  */
 export async function onDeleteActiveEffect(effect, options /*, userId */) {
   if (options?.[MODULE_ID]?.skipFunnel === true) return;
@@ -50,6 +57,14 @@ export async function performDismissCleanup(effect, options = {}) {
   const reason = inferReason(effect, options, caster);
   const skipTokenTeardown = options?.[MODULE_ID]?.skipTokenTeardown === true
     || effect.getFlag?.(MODULE_ID, "skipTokenTeardown") === true;
+  // v0.1.17 (Bug #1 recast fix): the recast pre-dismissal (cast-flow.js onPreUseActivity)
+  // passes skipAnimation so the OLD Tulpa's teardown is just a few fast DB ops — the
+  // dismiss animation can otherwise run up to 15s, long enough for a fast placement to
+  // create the new token while the old "Summon:" AE is still alive (midi-qol would then
+  // pin the new token to it and the old sweep would drag the new token down). The new
+  // token must exist only AFTER the old "Summon:" AE is gone, so on recast we don't wait
+  // on the animation. All other dismissal triggers keep the animation.
+  const skipAnimation = options?.[MODULE_ID]?.skipAnimation === true;
 
   // Tear down in-memory watchers first.
   unarmTulpaHpWatcher(tulpaUuid);
@@ -66,7 +81,7 @@ export async function performDismissCleanup(effect, options = {}) {
       // leaving the Tulpa on the canvas. Wrap in try/finally so the delete *always*
       // runs even if Sequencer/JB2A barfs on a missing asset variant.
       try {
-        if (placeable && castConfig.damageType) await playDismiss(placeable, castConfig.damageType);
+        if (placeable && castConfig.damageType && !skipAnimation) await playDismiss(placeable, castConfig.damageType);
       } catch (err) {
         console.warn(`${MODULE_ID} | dismiss animation failed:`, err);
       }

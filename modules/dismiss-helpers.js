@@ -7,6 +7,22 @@
 // We locate it by matching the spell item's UUID against the AE's stored summon
 // origin flag, with a name-regex fallback for defense-in-depth.
 
+/**
+ * Locate the caster-side anchor AE ("Manifest Tulpa (active)") — the single source of
+ * truth that a Tulpa is live (invariant #1). Returns the first effect carrying
+ * `flags[moduleId].tulpaUuid`, or null.
+ *
+ * The recast fix (v0.1.17 Bug #1) uses this in `onPreUseActivity` to find and dismiss
+ * the OLD Tulpa BEFORE dnd5e creates the new token. Kept here, pure and Node-testable,
+ * mirroring `findSystemSummonAE`. Reads `.flags` directly (not `getFlag`) so it works on
+ * both test fakes and live ActiveEffect documents — a real AE exposes the same flags bag.
+ */
+export function findPreviousAnchor(caster, moduleId = "manifest-tulpa") {
+  const effects = caster?.effects;
+  if (!effects?.find) return null;
+  return effects.find(e => e?.flags?.[moduleId]?.tulpaUuid != null) ?? null;
+}
+
 export function findSystemSummonAE(caster, spellIdentifier = "manifest-tulpa") {
   if (!caster) return null;
   const spellItem = caster.items?.find?.(i => i.system?.identifier === spellIdentifier);

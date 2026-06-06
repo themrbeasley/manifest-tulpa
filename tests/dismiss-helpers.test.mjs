@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findSystemSummonAE } from "../modules/dismiss-helpers.js";
+import { findSystemSummonAE, findPreviousAnchor } from "../modules/dismiss-helpers.js";
 
 test("findSystemSummonAE returns null on missing caster", () => {
   assert.equal(findSystemSummonAE(undefined), null);
@@ -66,6 +66,69 @@ test("findSystemSummonAE accepts a custom spellIdentifier", () => {
   const target = { name: "Summon: Fiend", flags: { dnd5e: { summon: { origin: "Actor.c.Item.xx" } } } };
   const caster = makeCaster([spellItem], [target]);
   assert.equal(findSystemSummonAE(caster, "summon-fiend"), target);
+});
+
+// --- findPreviousAnchor (recast pre-dismissal selection, v0.1.17 Bug #1) -----
+//
+// findPreviousAnchor locates the caster-side anchor AE ("Manifest Tulpa (active)")
+// — the single source of truth that a Tulpa is live (invariant #1). The recast fix
+// uses it in onPreUseActivity to dismiss the OLD Tulpa before the new token exists.
+// It reads `flags[moduleId].tulpaUuid` directly (pure) — a live ActiveEffect exposes
+// the same `.flags` bag, so the helper works on both fakes and real documents.
+
+test("findPreviousAnchor returns null on missing caster", () => {
+  assert.equal(findPreviousAnchor(undefined), null);
+  assert.equal(findPreviousAnchor(null), null);
+});
+
+test("findPreviousAnchor returns null when caster has no usable effects collection", () => {
+  assert.equal(findPreviousAnchor({ effects: undefined }), null);
+  assert.equal(findPreviousAnchor({ effects: {} }), null); // no .find
+});
+
+test("findPreviousAnchor returns null when no effect carries our tulpaUuid flag", () => {
+  const effects = [
+    { name: "Bless", flags: {} },
+    { name: "Summon: Manifest Tulpa", flags: { dnd5e: { summon: { origin: "Actor.c.Item.x" } } } },
+  ];
+  assert.equal(findPreviousAnchor({ effects }), null);
+});
+
+test("findPreviousAnchor finds the anchor carrying flags[moduleId].tulpaUuid", () => {
+  const anchor = {
+    name: "Manifest Tulpa (active)",
+    flags: { "manifest-tulpa": { tulpaUuid: "Scene.s.Token.t.Actor.a", castConfig: {} } },
+  };
+  const effects = [{ name: "Bless", flags: {} }, anchor];
+  assert.equal(findPreviousAnchor({ effects }), anchor);
+});
+
+test("findPreviousAnchor ignores the system summon AE (no tulpaUuid in our namespace)", () => {
+  // The dnd5e/midi summon AE lives under flags.dnd5e.summon, never flags['manifest-tulpa'].tulpaUuid.
+  const summonAE = { name: "Summon: Manifest Tulpa", flags: { dnd5e: { summon: { origin: "Actor.c.Item.x" } } } };
+  assert.equal(findPreviousAnchor({ effects: [summonAE] }), null);
+});
+
+test("findPreviousAnchor works on an EmbeddedCollection-shaped effects (.find present)", () => {
+  // Live `caster.effects` is an EmbeddedCollection; only `.find` is relied upon.
+  const anchor = { name: "Manifest Tulpa (active)", flags: { "manifest-tulpa": { tulpaUuid: "x" } } };
+  const caster = makeCaster([], [anchor]);
+  assert.equal(findPreviousAnchor(caster), anchor);
+});
+
+test("findPreviousAnchor accepts a custom moduleId", () => {
+  const anchor = { name: "Other (active)", flags: { "other-module": { tulpaUuid: "y" } } };
+  assert.equal(findPreviousAnchor({ effects: [anchor] }, "other-module"), anchor);
+  // and does NOT match it under the default moduleId
+  assert.equal(findPreviousAnchor({ effects: [anchor] }), null);
+});
+
+test("findPreviousAnchor treats a null/absent tulpaUuid as not-an-anchor", () => {
+  const effects = [
+    { name: "stale", flags: { "manifest-tulpa": { tulpaUuid: null } } },
+    { name: "empty-ns", flags: { "manifest-tulpa": {} } },
+  ];
+  assert.equal(findPreviousAnchor({ effects }), null);
 });
 
 // --- helpers --------------------------------------------------------------
