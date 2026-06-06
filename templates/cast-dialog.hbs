@@ -15,9 +15,10 @@
       {{#each categories}}
         <div class="mt-category">{{localize this.label}}</div>
         {{#each (lookup ../grouped this.key)}}
-          <label class="mt-row">
+          <label class="mt-row {{#if this.disabled}}disabled{{/if}}">
             <input type="checkbox" data-slug="{{this.slug}}"
-                   {{#if this.isSelected}}checked{{/if}}>
+                   {{#if this.isSelected}}checked{{/if}}
+                   {{#if this.disabled}}disabled{{/if}}>
             <span>{{this.displayName}}</span>
             <span>({{this.slots}})</span>
           </label>

@@ -45,6 +45,35 @@ export function isAnchorDurationExpired(anchor) {
   return remaining != null && remaining <= 0;
 }
 
+/**
+ * Collect every combatant across all combats whose `tokenId` matches the dismissed
+ * Tulpa's token (v0.1.17 smoke Bug #6).
+ *
+ * Foundry does NOT auto-remove a combatant when its token is deleted (live-confirmed:
+ * the combatant survives with `.token` resolving to null while `tokenId` still points at
+ * the deleted token). `performDismissCleanup` deletes the Tulpa token but had no
+ * combatant-removal step, so every dismissal left a ghost in the tracker. This helper
+ * finds the matches by the anchor-stored `tulpaTokenId` — token ids are per-cast and
+ * reliable, avoiding the actorId cross-match risk of an import-cached synthetic actor.
+ *
+ * Pure (no Foundry globals): `combats` and each `combat.combatants` are iterated with
+ * `for…of` — a live `game.combats` WorldCollection and `combat.combatants`
+ * EmbeddedCollection are both iterable, and a test fake supplies plain arrays. Returns
+ * an empty array for a missing tokenId or no combats so the caller can `for…of` safely.
+ */
+export function collectTulpaCombatants(combats, tokenId) {
+  if (!tokenId || !combats) return [];
+  const matches = [];
+  for (const combat of combats) {
+    const combatants = combat?.combatants;
+    if (!combatants) continue;
+    for (const c of combatants) {
+      if (c?.tokenId === tokenId) matches.push(c);
+    }
+  }
+  return matches;
+}
+
 export function findSystemSummonAE(caster, spellIdentifier = "manifest-tulpa") {
   if (!caster) return null;
   const spellItem = caster.items?.find?.(i => i.system?.identifier === spellIdentifier);

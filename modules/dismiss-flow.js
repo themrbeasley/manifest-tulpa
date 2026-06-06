@@ -2,7 +2,7 @@ import { MODULE_ID } from "./constants.js";
 import { postDismiss } from "./chat-cards.js";
 import { playDismiss, endAuraEffect } from "./animations.js";
 import { unarmTulpaHpWatcher } from "./tulpa-hp-watcher.js";
-import { findSystemSummonAE, isAnchorDurationExpired } from "./dismiss-helpers.js";
+import { findSystemSummonAE, isAnchorDurationExpired, collectTulpaCombatants } from "./dismiss-helpers.js";
 
 /**
  * deleteActiveEffect hook — fires when the caster-side anchor AE is removed for any reason.
@@ -95,6 +95,20 @@ export async function performDismissCleanup(effect, options = {}) {
         try { await tokenDoc.delete(); }
         catch (err) { console.warn(`${MODULE_ID} | token delete failed:`, err); }
       }
+    }
+  }
+
+  // v0.1.17 Bug #6: Foundry leaves a combatant orphaned in the tracker when its token
+  // is deleted (the combatant survives with `.token` resolving to null). The token
+  // teardown above never touches the tracker, so every dismissal used to leave a ghost.
+  // Sweep any combatant whose tokenId matches the anchor-stored Tulpa token. Runs on the
+  // single funnel, so it covers all five dismissal triggers. Guard for no-combat sessions
+  // (collectTulpaCombatants returns [] for a null tokenId or no combats).
+  if (tokenId && game.combats?.size) {
+    const ghosts = collectTulpaCombatants(game.combats, tokenId);
+    for (const combatant of ghosts) {
+      try { await combatant.delete(); }
+      catch (err) { console.warn(`${MODULE_ID} | orphan combatant cleanup failed:`, err); }
     }
   }
 

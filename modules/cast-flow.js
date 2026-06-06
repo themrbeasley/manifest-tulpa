@@ -1,11 +1,11 @@
 import { MODIFICATIONS, iterActivities, buildStrikeParts } from "./modification-registry.js";
-import { MODULE_ID, NS, ANCHOR_AE_NAME, ANCHOR_DURATION_SECONDS } from "./constants.js";
+import { MODULE_ID, NS, ANCHOR_AE_NAME, ANCHOR_DURATION_SECONDS, ANCHOR_SPECIAL_DURATIONS } from "./constants.js";
 import { openCastDialog } from "./cast-dialog.js";
 import { postCast, postWarning } from "./chat-cards.js";
 import { playManifest } from "./animations.js";
 import { armTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 import { alignTulpaInitiative } from "./initiative.js";
-import { findPreviousAnchor } from "./dismiss-helpers.js";
+import { findPreviousAnchor, findSystemSummonAE } from "./dismiss-helpers.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
 
@@ -112,7 +112,7 @@ export async function onPostSummon(activity, _profile, createdTokens /*, options
 
   const selection = await openCastDialog({ availableSlots });
   if (!selection) {
-    await abortAndCleanup(token, game.i18n.localize("MANIFEST_TULPA.Chat.CancelWarning"));
+    await abortAndCleanup(token, caster, game.i18n.localize("MANIFEST_TULPA.Chat.CancelWarning"));
     return;
   }
 
@@ -121,7 +121,7 @@ export async function onPostSummon(activity, _profile, createdTokens /*, options
   // Defensive slot-budget check (matches Section 4 step "Defensive: refuse if over").
   const used = selection.modifications.reduce((n, s) => n + (MODIFICATIONS[s]?.slots ?? 0), 0);
   if (used > availableSlots) {
-    await abortAndCleanup(token, `castConfig over budget (${used}/${availableSlots}) — aborting.`);
+    await abortAndCleanup(token, caster, `castConfig over budget (${used}/${availableSlots}) — aborting.`);
     return;
   }
 
@@ -276,11 +276,25 @@ async function applyModifications(tulpa, caster, castConfig) {
   }
 }
 
-async function abortAndCleanup(token, message) {
+async function abortAndCleanup(token, caster, message) {
   if (token) {
     // `token` is the TokenDocument from postSummon's `createdTokens[0]`.
     try { await token.delete(); }
     catch (err) { console.warn(`${MODULE_ID} | abort token cleanup failed:`, err); }
+  }
+  // v0.1.17 (smoke Bug #7): a cancelled/over-budget cast never creates the caster-side
+  // anchor, so the single-funnel dismissal never runs — and midi-qol's "Summon: Manifest
+  // Tulpa" AE (created on the caster ~2-4s after placement) would orphan on the caster for
+  // an hour. The normal dismiss path sweeps this AE via the funnel; on the abort path there
+  // IS no funnel, so sweep it here directly. A synchronous sweep suffices: the dialog is
+  // open far longer than midi's async create, and there's no later cast whose AE we'd risk
+  // catching (live-validated midi does not re-create it after this delete).
+  if (caster) {
+    const summonAE = findSystemSummonAE(caster);
+    if (summonAE) {
+      try { await summonAE.delete(); }
+      catch (err) { console.warn(`${MODULE_ID} | abort summon AE cleanup failed:`, err); }
+    }
   }
   await postWarning({ message });
 }
@@ -307,7 +321,7 @@ async function createAnchorAE(caster, tulpa, castConfig) {
         tulpaSceneId: tulpaTokenDoc?.parent?.id ?? null,
         castConfig,
       },
-      dae: { specialDuration: ["zeroHP", "isDeath"], showIcon: false },
+      dae: { specialDuration: ANCHOR_SPECIAL_DURATIONS, showIcon: false },
     },
   }]);
 }

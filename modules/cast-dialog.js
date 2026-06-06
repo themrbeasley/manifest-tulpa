@@ -56,19 +56,27 @@ class ManifestTulpaCastDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   }
 
   async _prepareContext() {
+    // v0.1.17 (smoke Bug #10): compute the budget BEFORE building rows so each mod can
+    // carry a `disabled` flag. A mod is disabled when selecting it would overrun the
+    // remaining budget (already-selected mods stay enabled so they can be unticked). The
+    // template renders `disabled` checkboxes, which can't be toggled — preventing the
+    // over-budget state at the source. The submit-time guard (#onSubmit) stays as defense.
+    const used = this._slotsUsed();
+    const remaining = this.availableSlots - used;
     const grouped = {};
     for (const [slug, m] of Object.entries(MODIFICATIONS)) {
       // Pretty display name — prefer the AE/item name when the registry encodes one,
       // otherwise turn the slug into Title Case so e.g. `empoweredStrikes` becomes
       // "Empowered Strikes". v0.1.6 surfaced raw slugs in the picker.
       const displayName = m.template?.name ?? m.item?.name ?? prettifySlug(slug);
+      const isSelected = this.selected.has(slug);
       (grouped[m.category] ??= []).push({
         slug, ...m,
         displayName,
-        isSelected: this.selected.has(slug),
+        isSelected,
+        disabled: !isSelected && (m.slots ?? 0) > remaining,
       });
     }
-    const used = this._slotsUsed();
     return {
       damageTypes: DAMAGE_TYPES,
       damageType: this.damageType,

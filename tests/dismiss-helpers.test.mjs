@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findSystemSummonAE, findPreviousAnchor, isAnchorDurationExpired } from "../modules/dismiss-helpers.js";
+import { findSystemSummonAE, findPreviousAnchor, isAnchorDurationExpired, collectTulpaCombatants } from "../modules/dismiss-helpers.js";
 
 test("findSystemSummonAE returns null on missing caster", () => {
   assert.equal(findSystemSummonAE(undefined), null);
@@ -171,6 +171,56 @@ test("isAnchorDurationExpired is false when the anchor has no duration object", 
 test("isAnchorDurationExpired is false for a null/undefined anchor (never throws)", () => {
   assert.equal(isAnchorDurationExpired(null), false);
   assert.equal(isAnchorDurationExpired(undefined), false);
+});
+
+// --- collectTulpaCombatants (orphan-combatant sweep, v0.1.17 smoke Bug #6) ---
+//
+// Foundry leaves a combatant orphaned in the tracker when its token is deleted (the
+// combatant survives with `.token` resolving to null while `tokenId` still points at the
+// deleted token). performDismissCleanup deletes the Tulpa token but had no combatant
+// removal, so every dismissal left a ghost. collectTulpaCombatants(combats, tokenId)
+// returns every combatant across all combats whose `tokenId` matches the dismissed
+// Tulpa's token, for the caller to delete. Pure: iterates `combats` and each
+// `combat.combatants` with for…of (live: a WorldCollection and EmbeddedCollection; test:
+// plain arrays). Returns [] for a missing tokenId or no combats.
+
+test("collectTulpaCombatants returns [] for a null/undefined tokenId", () => {
+  const combats = [{ combatants: [{ tokenId: "tok1" }] }];
+  assert.deepEqual(collectTulpaCombatants(combats, null), []);
+  assert.deepEqual(collectTulpaCombatants(combats, undefined), []);
+});
+
+test("collectTulpaCombatants returns [] when combats is null/undefined/empty", () => {
+  assert.deepEqual(collectTulpaCombatants(null, "tok1"), []);
+  assert.deepEqual(collectTulpaCombatants(undefined, "tok1"), []);
+  assert.deepEqual(collectTulpaCombatants([], "tok1"), []);
+});
+
+test("collectTulpaCombatants finds the combatant whose tokenId matches", () => {
+  const match = { tokenId: "tok1", name: "Tulpa" };
+  const combats = [{ combatants: [{ tokenId: "other" }, match] }];
+  assert.deepEqual(collectTulpaCombatants(combats, "tok1"), [match]);
+});
+
+test("collectTulpaCombatants returns no matches when nothing shares the tokenId", () => {
+  const combats = [{ combatants: [{ tokenId: "a" }, { tokenId: "b" }] }];
+  assert.deepEqual(collectTulpaCombatants(combats, "tok1"), []);
+});
+
+test("collectTulpaCombatants searches across multiple combats", () => {
+  const m1 = { tokenId: "tok1", combat: 1 };
+  const m2 = { tokenId: "tok1", combat: 2 };
+  const combats = [
+    { combatants: [{ tokenId: "x" }, m1] },
+    { combatants: [m2, { tokenId: "y" }] },
+  ];
+  assert.deepEqual(collectTulpaCombatants(combats, "tok1"), [m1, m2]);
+});
+
+test("collectTulpaCombatants tolerates a combat with no combatants collection", () => {
+  const match = { tokenId: "tok1" };
+  const combats = [{ combatants: null }, {}, { combatants: [match] }];
+  assert.deepEqual(collectTulpaCombatants(combats, "tok1"), [match]);
 });
 
 // --- helpers --------------------------------------------------------------

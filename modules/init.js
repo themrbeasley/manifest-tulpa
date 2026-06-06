@@ -13,9 +13,9 @@ Hooks.once("init", () => {
 // JS session (some dev/reload workflows re-fire `ready`). Use globalThis so the
 // guard survives module re-import while the Hooks event bus is still alive.
 Hooks.once("ready", async () => {
-  console.log(`${MODULE_ID} | ready`);
   if (globalThis.__manifestTulpaHooksRegistered) return;
   globalThis.__manifestTulpaHooksRegistered = true;
+  console.log(`${MODULE_ID} | ready`);
   // v0.1.13 (smoke REG-1): switched from `dnd5e.postUseActivity` to a paired
   // preUseActivity + postSummon. postUseActivity uses `Hooks.call` (short-circuit on
   // first `return false`), and other modules' handlers silently blocked our cast flow.
