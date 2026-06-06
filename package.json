@@ -1,7 +1,7 @@
 {
   "name": "manifest-tulpa",
   "private": true,
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Build tooling for the Manifest Tulpa Foundry module.",
   "type": "module",
   "scripts": {
