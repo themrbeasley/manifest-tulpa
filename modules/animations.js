@@ -29,13 +29,22 @@ function withTimeout(promise, label) {
 // Sequencer.Database.entryExists is the cheap pre-flight: when the jb2a asset isn't
 // indexed (no Patreon module, asset misnamed, etc.) we can skip the Sequence entirely
 // and avoid the full ANIM_TIMEOUT_MS wait that v0.1.7's smoke report flagged as a UX papercut.
-// Returns false only when the database is loaded *and* the entry is confirmed missing —
-// any other state (DB not ready, function absent) returns true so we still attempt the
-// play and fall back to the timeout safety net.
-function assetAvailable(asset) {
+//
+// v0.1.17 (smoke Bug #5): the guard read `entryExists(asset) !== false`, but Sequencer
+// 3.6.11 `entryExists` returns the string DB key when an asset is present and `undefined`
+// when it's missing — it NEVER returns boolean `false`. So `undefined !== false` was always
+// true: the guard reported every missing asset as available, defeating its entire purpose
+// and letting the missing impact keys reach `.play()`, which then crashed with a detached
+// `baseTexture` unhandled rejection that try/catch + withTimeout cannot see. The correct
+// test is `!= null` (catches both `undefined` and `null`).
+//
+// Contract: confirmed-missing → false (skip the play); present (string key) → true;
+// DB not ready / function absent / throws → true, so we still attempt the play and rely on
+// the timeout safety net. Exported so tests/animations.test.mjs can lock this against regression.
+export function assetAvailable(asset) {
   const db = globalThis.Sequencer?.Database;
   if (typeof db?.entryExists !== "function") return true;
-  try { return db.entryExists(asset) !== false; }
+  try { return db.entryExists(asset) != null; }
   catch { return true; }
 }
 
