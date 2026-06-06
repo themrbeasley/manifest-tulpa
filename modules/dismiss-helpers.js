@@ -23,6 +23,28 @@ export function findPreviousAnchor(caster, moduleId = "manifest-tulpa") {
   return effects.find(e => e?.flags?.[moduleId]?.tulpaUuid != null) ?? null;
 }
 
+/**
+ * True when an anchor AE's duration has run out (`duration.remaining <= 0`).
+ *
+ * This is the discriminator between a duration-expiry dismissal and a genuine GM
+ * manual token delete (v0.1.17 Bug #2/#3). On duration expiry, `times-up` expires
+ * BOTH the dnd5e "Summon:" AE and the module anchor in one batch; deleting the Summon
+ * AE cascade-deletes the Tulpa token, and the token's `preDeleteToken` hook
+ * (`onPreDeleteToken`) would otherwise race ahead to delete the anchor itself — stamping
+ * the wrong "manual" reason (Bug #3) AND leaving times-up's own later anchor delete to hit
+ * an already-removed id (`ActiveEffect "…" does not exist!` — the red banner, Bug #2).
+ * `onPreDeleteToken` calls this to DEFER to times-up when the anchor has already expired;
+ * `inferReason` reuses it so "expired" is defined in exactly one place.
+ *
+ * Pure (no Foundry globals): reads `anchor.duration.remaining`, which a live ActiveEffect
+ * exposes as a getter and a test fake supplies as a plain value. A missing/absent duration
+ * (null/undefined remaining) is treated as NOT expired — that is the manual-delete path.
+ */
+export function isAnchorDurationExpired(anchor) {
+  const remaining = anchor?.duration?.remaining;
+  return remaining != null && remaining <= 0;
+}
+
 export function findSystemSummonAE(caster, spellIdentifier = "manifest-tulpa") {
   if (!caster) return null;
   const spellItem = caster.items?.find?.(i => i.system?.identifier === spellIdentifier);

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { findSystemSummonAE, findPreviousAnchor } from "../modules/dismiss-helpers.js";
+import { findSystemSummonAE, findPreviousAnchor, isAnchorDurationExpired } from "../modules/dismiss-helpers.js";
 
 test("findSystemSummonAE returns null on missing caster", () => {
   assert.equal(findSystemSummonAE(undefined), null);
@@ -129,6 +129,48 @@ test("findPreviousAnchor treats a null/absent tulpaUuid as not-an-anchor", () =>
     { name: "empty-ns", flags: { "manifest-tulpa": {} } },
   ];
   assert.equal(findPreviousAnchor({ effects }), null);
+});
+
+// --- isAnchorDurationExpired (duration-expiry dismissal guard, v0.1.17 Bug #2/#3) ---
+//
+// isAnchorDurationExpired(anchor) is the discriminator that tells a duration-expiry
+// dismissal apart from a genuine GM manual token delete. On duration expiry, times-up
+// expires BOTH the dnd5e "Summon:" AE and the module anchor in one batch; deleting the
+// Summon AE cascade-deletes the Tulpa token, whose preDeleteToken hook would otherwise
+// race ahead and delete the anchor itself (stamping the wrong "manual" reason AND leaving
+// times-up's own later anchor delete to throw `… does not exist!` — the red banner).
+// onPreDeleteToken uses this helper to DEFER to times-up when the anchor's duration has
+// already run out; inferReason reuses it so "expired" is defined in exactly one place.
+//
+// Contract: true ONLY when a numeric `remaining` is present and <= 0. A missing/absent
+// duration (null/undefined remaining) is NOT expired — that's the manual path, keep it.
+
+test("isAnchorDurationExpired is true when remaining is exactly 0", () => {
+  assert.equal(isAnchorDurationExpired({ duration: { remaining: 0 } }), true);
+});
+
+test("isAnchorDurationExpired is true when remaining is negative (overshot the expiry tick)", () => {
+  assert.equal(isAnchorDurationExpired({ duration: { remaining: -5 } }), true);
+});
+
+test("isAnchorDurationExpired is false when time remains (manual-delete path keeps 'manual')", () => {
+  assert.equal(isAnchorDurationExpired({ duration: { remaining: 100 } }), false);
+  assert.equal(isAnchorDurationExpired({ duration: { remaining: 1 } }), false);
+});
+
+test("isAnchorDurationExpired is false when remaining is null/undefined (no expiry signal)", () => {
+  assert.equal(isAnchorDurationExpired({ duration: { remaining: null } }), false);
+  assert.equal(isAnchorDurationExpired({ duration: { remaining: undefined } }), false);
+  assert.equal(isAnchorDurationExpired({ duration: {} }), false);
+});
+
+test("isAnchorDurationExpired is false when the anchor has no duration object", () => {
+  assert.equal(isAnchorDurationExpired({}), false);
+});
+
+test("isAnchorDurationExpired is false for a null/undefined anchor (never throws)", () => {
+  assert.equal(isAnchorDurationExpired(null), false);
+  assert.equal(isAnchorDurationExpired(undefined), false);
 });
 
 // --- helpers --------------------------------------------------------------

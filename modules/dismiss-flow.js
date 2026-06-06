@@ -2,7 +2,7 @@ import { MODULE_ID } from "./constants.js";
 import { postDismiss } from "./chat-cards.js";
 import { playDismiss, endAuraEffect } from "./animations.js";
 import { unarmTulpaHpWatcher } from "./tulpa-hp-watcher.js";
-import { findSystemSummonAE } from "./dismiss-helpers.js";
+import { findSystemSummonAE, isAnchorDurationExpired } from "./dismiss-helpers.js";
 
 /**
  * deleteActiveEffect hook — fires when the caster-side anchor AE is removed for any reason.
@@ -115,6 +115,13 @@ export async function performDismissCleanup(effect, options = {}) {
 /**
  * preDeleteToken hook — trigger #5: when a GM manually deletes the Tulpa token,
  * find the summoner's matching anchor AE and delete it (which re-enters the funnel above).
+ *
+ * v0.1.17 (Bug #2/#3): this hook ALSO fires when a *duration-expiry* cascade deletes the
+ * token — times-up expires the dnd5e "Summon:" AE, whose dependent cascade deletes the
+ * token (`ActiveEffect5e#_onDelete`). In that case the anchor's duration is already
+ * exhausted and times-up is about to delete the anchor too, so we DEFER the anchor delete
+ * to times-up rather than racing it (see the inline guard). Only a true manual delete —
+ * where the anchor still has time left (`remaining > 0`) — takes the "manual" path.
  */
 export async function onPreDeleteToken(tokenDoc) {
   const summonOrigin = tokenDoc.actor?.getFlag?.("dnd5e", "summon")?.origin;
@@ -127,6 +134,17 @@ export async function onPreDeleteToken(tokenDoc) {
   if (!caster) return;
   const anchor = caster.effects.find(e => e.getFlag(MODULE_ID, "tulpaUuid") === tokenDoc.actor.uuid);
   if (!anchor) return;
+  // Duration-expiry deferral (v0.1.17 Bug #2/#3): if this token delete is itself a
+  // duration-expiry cascade (the dnd5e "Summon:" AE times-up just expired owns this token
+  // as a dependent — see onPreDeleteToken JSDoc), the anchor's duration is already spent and
+  // times-up is about to delete the anchor on the same tick. DEFER to that delete. Deleting
+  // the anchor here would (a) stamp "manual" — wrong, the spell timed out, it wasn't
+  // hand-deleted (Bug #3) — and (b) leave times-up's own anchor delete to hit an
+  // already-removed id, throwing `ActiveEffect "…" does not exist!` (the red banner, Bug #2).
+  // Standing back makes times-up the SOLE anchor delete: one clean removal, and the funnel
+  // re-enters with no options so `inferReason` resolves "duration". A genuine GM manual
+  // delete has `remaining > 0`, so the guard is false and the "manual" path below is unchanged.
+  if (isAnchorDurationExpired(anchor)) return;
   // Pass reason + skipTokenTeardown via delete options (sync, no awaited setFlag race).
   // Foundry surfaces these to `onDeleteActiveEffect` as its 2nd hook arg. The
   // skipTokenTeardown flag tells the funnel not to re-delete the token — Foundry is
@@ -159,7 +177,6 @@ function inferReason(effect, options, caster) {
   if (caster?.statuses?.has?.("dead")) return "isDeath";
   const casterHp = caster?.system?.attributes?.hp?.value;
   if (typeof casterHp === "number" && casterHp <= 0) return "casterZeroHP";
-  const remaining = effect.duration?.remaining;
-  if (remaining != null && remaining <= 0) return "duration";
+  if (isAnchorDurationExpired(effect)) return "duration";
   return "anchorRemoved";
 }
