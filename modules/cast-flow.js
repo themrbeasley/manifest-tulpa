@@ -6,15 +6,24 @@ import { playManifest } from "./animations.js";
 import { armTulpaHpWatcher } from "./tulpa-hp-watcher.js";
 import { alignTulpaInitiative } from "./initiative.js";
 import { findPreviousAnchor, findSystemSummonAE } from "./dismiss-helpers.js";
+import { resolveSlotLevel, modBudget } from "./slot-budget.js";
 
 const SPELL_IDENTIFIER = "manifest-tulpa";
 
-// v0.1.13 (smoke REG-1): slot level captured at preUseActivity so postSummon can read
-// it without depending on `usageConfig` (which dnd5e doesn't pass to postSummon). Keyed
-// by activity.uuid — entries are deleted as soon as postSummon consumes them, so the
+// v0.1.13 (smoke REG-1): we stash the cast's usageConfig at preUseActivity so postSummon
+// can recover the expended slot level (dnd5e doesn't pass usageConfig to postSummon).
+// Keyed by activity.uuid — entries are deleted as soon as postSummon consumes them, so the
 // map never accumulates across casts. A chat-button "Summon" press on a deferred cast
-// won't have a capture (preUseActivity already fired and we cleared it on the inline
-// path); in that case we fall back to slot 5, which is the spell's base level.
+// won't have a capture; in that case we fall back to slot 5, the spell's base level.
+//
+// v0.1.18 (mod-slot-budget bug): we now stash the LIVE usageConfig OBJECT, not an eager
+// `parseSlotLevel(usageConfig)` result. preUseActivity (mixin.mjs:221) fires BEFORE the
+// slot-selection dialog (L224-230) writes the chosen slot into usageConfig.spell.slot and
+// BEFORE `_prepareUsageScaling` (L233) sets usageConfig.scaling — so parsing at capture
+// time always read the pre-dialog base (5) and the budget was forever 2. dnd5e mutates the
+// SAME usageConfig object in place (it's a `const` from mixin.mjs:191, never reassigned),
+// so by postSummon this stashed reference carries the real chosen slot. resolveSlotLevel()
+// reads it then. See modules/slot-budget.js + the mod-slot-budget scratchpad.
 const SLOT_CAPTURE = new Map();
 
 // v0.1.17 (Bug #1 recast fix): when casting over a live Tulpa, we tear the OLD one down
@@ -49,7 +58,9 @@ const RECAST_DISMISS_OPTIONS = { [MODULE_ID]: { dismissReason: "recast", skipAni
 export function onPreUseActivity(activity, usageConfig /*, dialogConfig, messageConfig */) {
   if (activity?.type !== "summon") return;
   if (activity.item?.system?.identifier !== SPELL_IDENTIFIER) return;
-  SLOT_CAPTURE.set(activity.uuid, parseSlotLevel(usageConfig));
+  // Stash the LIVE usageConfig object (NOT a parse). dnd5e mutates it in place during slot
+  // selection + scaling; postSummon resolves the real level from it. See SLOT_CAPTURE note.
+  SLOT_CAPTURE.set(activity.uuid, usageConfig);
 
   // Trigger #4 (recast) — if a Tulpa is already live, tear the OLD one down NOW, before
   // dnd5e consumes the slot and creates the new token. preUseActivity fires AFTER slot
@@ -89,9 +100,14 @@ export async function onPostSummon(activity, _profile, createdTokens /*, options
   if (!caster) return;
 
   // ---- Phase 1: pre-cast dialog ----
-  const slotLevel = SLOT_CAPTURE.get(activity.uuid) ?? 5;
+  // Resolve the expended slot level from the LIVE usageConfig stashed at preUseActivity.
+  // It's read HERE (postSummon), after dnd5e mutated it via the slot dialog +
+  // _prepareUsageScaling — reading it eagerly at capture time always saw the base 5 and
+  // pinned the budget at 2 (v0.1.18 bug). No capture (deferred chat-button path) → 5.
+  const captured = SLOT_CAPTURE.get(activity.uuid);
   SLOT_CAPTURE.delete(activity.uuid);
-  const availableSlots = Math.min(6, 2 + Math.max(0, slotLevel - 5));
+  const slotLevel = resolveSlotLevel(captured);
+  const availableSlots = modBudget(slotLevel);
 
   // Trigger #4 (recast) — the OLD Tulpa's teardown was kicked off in onPreUseActivity
   // (before this new token existed). Await it here so the new cast pipeline never races a
@@ -163,16 +179,6 @@ export async function onPostSummon(activity, _profile, createdTokens /*, options
 
   // Step 8: cast confirmation card.
   await postCast({ caster, tulpa, castConfig });
-}
-
-function parseSlotLevel(usageConfig) {
-  const raw = usageConfig?.spell?.slot;
-  if (typeof raw === "string") {
-    const m = /spell(\d+)/.exec(raw);
-    if (m) return Number(m[1]);
-  }
-  if (typeof usageConfig?.scaling === "number") return 5 + usageConfig.scaling;
-  return 5;
 }
 
 // Single-writer for the Manifestation Strike weapon. The heavy lifting (Set→array

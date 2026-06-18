@@ -7,7 +7,7 @@
       "Radiant": "Radiant",
       "Psychic": "Psychic",
       "Modifications": "Modifications",
-      "SlotsUsed": "Slots used: {used} / {max}",
+      "SlotsUsed": "Modifications used: {used} / {max}",
       "Cancel": "Cancel",
       "Confirm": "Manifest Tulpa",
       "CategoryMorphic": "Morphic",
