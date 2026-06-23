@@ -208,3 +208,25 @@ test("spell description.chat also avoids the R36 front-matter header strings", (
     assert.ok(!c.includes(needle), `description.chat must not contain header line ${JSON.stringify(needle)}`);
   }
 });
+
+// --- v1.0.0 actor-art lock ---
+// The Tulpa actor sheet portrait (img) and prototype-token texture both shipped
+// the dnd5e npc.svg placeholder through v0.1.18. v1.0.0 swaps them for the
+// bundled commission. Lock both fields AND the on-disk asset so that a future
+// edit which points at the asset but forgets to commit the binary — or reverts
+// either field to npc.svg — fails `npm test` before tag.
+
+test("actor img points at the bundled portrait (v1.0.0)", () => {
+  assert.equal(actor.img, "modules/manifest-tulpa/assets/tulpa.jpg");
+});
+
+test("actor prototype-token texture points at the bundled portrait (v1.0.0)", () => {
+  assert.equal(actor.prototypeToken?.texture?.src, "modules/manifest-tulpa/assets/tulpa.jpg");
+});
+
+test("the bundled Tulpa portrait asset exists on disk (v1.0.0)", () => {
+  assert.ok(
+    existsSync(resolve(ROOT, "assets/tulpa.jpg")),
+    "assets/tulpa.jpg must be committed alongside the actor img/token reference"
+  );
+});

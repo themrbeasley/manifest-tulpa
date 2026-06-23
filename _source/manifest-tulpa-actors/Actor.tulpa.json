@@ -1,7 +1,7 @@
 {
   "name": "Tulpa",
   "type": "npc",
-  "img": "systems/dnd5e/icons/svg/actors/npc.svg",
+  "img": "modules/manifest-tulpa/assets/tulpa.jpg",
   "system": {
     "currency": {
       "pp": 0,
@@ -611,7 +611,7 @@
     "width": 1,
     "height": 1,
     "texture": {
-      "src": "systems/dnd5e/icons/svg/actors/npc.svg",
+      "src": "modules/manifest-tulpa/assets/tulpa.jpg",
       "anchorX": 0.5,
       "anchorY": 0.5,
       "offsetX": 0,
