@@ -2,6 +2,8 @@
 
 FoundryVTT V13 / dnd5e 5.2.5 module that automates the custom 5th-level Conjuration spell **Manifest Tulpa**.
 
+> **Status:** v1.0.0 — first stable release. The automation has been through twelve-plus smoke cycles; the cast dialog, modification picker, summon wiring, in-combat behaviors, and lifecycle management are all working. The Tulpa now ships with commissioned actor artwork.
+
 ## Install
 
 Paste this URL into Foundry's **Install Module** dialog:

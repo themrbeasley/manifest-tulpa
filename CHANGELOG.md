@@ -4,6 +4,20 @@ All notable changes to **Manifest Tulpa** are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] — 2026-06-22
+
+> First **stable** release. After twelve-plus smoke cycles the automation is solid — cast dialog, modification picker, summon wiring, in-combat behaviors, and lifecycle management all working — so the module graduates from `0.1.x` to `1.0.0`. The only functional change in this release is cosmetic: the Tulpa actor finally has a face. Its sheet portrait and map token shipped the generic dnd5e `npc.svg` placeholder through v0.1.18; v1.0.0 replaces both with a commissioned portrait bundled into the module. No mechanics, cast/dismiss flow, animation, or dependency changes.
+
+### Added
+
+- **Commissioned Tulpa portrait on the actor sheet and map token.** A new bundled asset [`assets/tulpa.jpg`](assets/tulpa.jpg) (served at runtime as `modules/manifest-tulpa/assets/tulpa.jpg`) replaces the `systems/dnd5e/icons/svg/actors/npc.svg` placeholder on both the actor `img` (sheet portrait) and `prototypeToken.texture.src` (map token) in [`_source/manifest-tulpa-actors/Actor.tulpa.json`](_source/manifest-tulpa-actors/Actor.tulpa.json). The prototype token already used `fit: "contain"`, so the portrait is letterboxed into the 1×1 token square rather than stretched. The actor `img`, the token `src`, and the on-disk presence of the asset are locked by three new assertions in [tests/spell-source.test.mjs](tests/spell-source.test.mjs) (v1.0.0 actor-art lock).
+
+### Internal
+
+- **Version bumped `0.1.18` → `1.0.0`** in [module.json](module.json). The `CLAUDE.md` "Current version" line — which had drifted to v0.1.15 — is corrected to v1.0.0, and a new locked-fields row records the actor-art lock.
+- **Smoke matrix extended** with R61/R62 (actor portrait on sheet + token) in [docs/superpowers/test-plans/2026-05-24-manifest-tulpa-smoke.md](docs/superpowers/test-plans/2026-05-24-manifest-tulpa-smoke.md).
+- **Test count 124 → 127.** `npm test` green; `npm run validate` → "Validation passed." (the validator imposes no constraint on actor `img`/token `src`, so the swap is validator-safe); `npm run build:packs` rebuilds cleanly. No generator was created or restored — the actor JSON was hand-edited and locked in the same commit, per source-tree discipline.
+
 ## [0.1.18] — 2026-06-18
 
 > Single-bug remediation release. A live-demo cast surfaced two linked defects in the cast dialog: (1) the modification budget was **stuck at 2 for every cast** — a 9th-level slot should allow 6 — and (2) the counter read "Slots used: …", conflating spell slots with modification slots. Root cause of (1) is a **timing bug**, not a math bug: the budget input was read at the wrong moment in dnd5e's activity lifecycle. Modules-and-tests only; no `_source/` change.

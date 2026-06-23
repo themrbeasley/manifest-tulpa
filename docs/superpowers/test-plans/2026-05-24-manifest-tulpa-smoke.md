@@ -12,7 +12,7 @@
 
 - Open the browser console. Expected: two log lines `manifest-tulpa | init` and `manifest-tulpa | ready`.
 
-## Regression checks (v0.1.4 → v0.1.13)
+## Regression checks (v0.1.4 → v1.0.0)
 
 Run these before the full smoke test. Each verifies a specific fix from the per-version patch sets. See [CHANGELOG.md](../../../CHANGELOG.md) and the corresponding test reports for full context.
 
@@ -139,6 +139,13 @@ The sole v0.1.5 fix (cast-dialog single-root template wrap) is already covered b
 | R58 | **Cast chat card shows the correct slot level.** Cast Manifest Tulpa with a **9th-level** slot, confirm any mods. The cast confirmation chat card's "**Slot:**" line reads "**Slot: 9**" (matching the expended slot), not "Slot: 5". Repeat at 7th → "Slot: 7". | Bug 1, same root cause: `castConfig.slotLevel` was the always-5 eager parse, so the chat card (`<strong>Slot:</strong> ${castConfig.slotLevel}` in [modules/chat-cards.js](../../../modules/chat-cards.js)) printed 5 for every cast. Fixed transitively by the R57 late-resolution change — no chat-card code change. The "Slot:" label is a genuine spell-slot reference and is intentionally retained. |
 | R59 | **Dialog counter verbiage says "Modifications", not "Slots".** Open the cast dialog. The bottom counter reads "**Modifications used: 0 / N**" — it must NOT read "Slots used: …". This kills the Spell-Slot vs Modification-Slot confusion the user flagged. Verify: `game.i18n.localize("MANIFEST_TULPA.Dialog.SlotsUsed")` returns a string containing "Modifications used" and not "Slots used". | Bug 2 (verbiage → v0.1.18): the `MANIFEST_TULPA.Dialog.SlotsUsed` value in [lang/en.json](../../../lang/en.json) changed from "Slots used: {used} / {max}" to "Modifications used: {used} / {max}". The i18n **key** stays `SlotsUsed` (template + dialog reference it); only the displayed value changed. Locked by the verbiage assertion in [tests/slot-budget.test.mjs](../../../tests/slot-budget.test.mjs). |
 | R60 | **Deferred chat-card "Summon" path falls back to budget 2 (known limitation, not a regression).** If you cast via a *deferred* path (the chat-card "Summon" button rather than inline placement), the cast dialog's budget falls back to **0 / 2** regardless of slot, because the inline `preUseActivity` already cleared the `SLOT_CAPTURE` entry before the deferred `postSummon` runs. PASS = this is documented behavior (it predates v0.1.18; the inline path R57 exercises is the one the user reported). FAIL = the **inline** path regresses to a fixed 2. | Pre-existing limitation surfaced during the v0.1.18 root-cause sweep: `resolveSlotLevel(undefined)` returns 5 → `modBudget(5)` = 2 when no `usageConfig` was stashed. This was the behavior before the bug too; v0.1.18 fixes the inline path only. Documented in the v0.1.18 CHANGELOG "Internal" note. |
+
+### v1.0.0 additions — first stable release
+
+| # | Check | Why |
+|---|---|---|
+| R61 | Open the **Tulpa actor sheet** (drag from the Actors compendium, or inspect a summoned Tulpa). The portrait shows the commissioned Tulpa artwork, **not** the generic dnd5e `npc.svg` silhouette. Verify in the console: `game.actors.getName("Tulpa")?.img` (or a summoned token's `actor.img`) equals `"modules/manifest-tulpa/assets/tulpa.jpg"`. | v1.0.0: the actor `img` placeholder `systems/dnd5e/icons/svg/actors/npc.svg` was swapped for the bundled commission `assets/tulpa.jpg`. Locked by the actor-art assertions in [tests/spell-source.test.mjs](../../../tests/spell-source.test.mjs). |
+| R62 | Cast Manifest Tulpa and place the token. The **map token** renders the commissioned artwork (letterboxed into the 1×1 square via `fit: "contain"`), **not** the `npc.svg` silhouette. Verify in the console: `canvas.tokens.placeables.find(p => p.actor?.name === "Tulpa")?.document.texture.src` equals `"modules/manifest-tulpa/assets/tulpa.jpg"`. | v1.0.0: `prototypeToken.texture.src` swapped from `npc.svg` to the bundled commission; `fit: "contain"` was already set so the portrait is contained, not stretched. Locked by the actor-art assertions in [tests/spell-source.test.mjs](../../../tests/spell-source.test.mjs). |
 
 If R4, R6, R12, R33, R35, or R42 fails, **stop** and re-open the most recent test report — the cast flow + dialog + aura are the gates to every downstream test.
 

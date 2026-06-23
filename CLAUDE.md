@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A FoundryVTT module that automates a custom 5th-level D&D 5e Conjuration spell, "Manifest Tulpa." Target stack: **FoundryVTT V13.351**, **dnd5e 5.2.5**. Distribution: personal use via GitHub Releases (manifest URL install).
 
-Current version: **v0.1.15** (see [CHANGELOG.md](CHANGELOG.md) and [module.json](module.json)). The runtime in [modules/](modules/), the hand-edited `_source/` JSON, the compendium packs in `packs/`, the build/validate scripts in [scripts/](scripts/), the [test suite](tests/), and the [release workflow](.github/workflows/release.yml) are all wired and have been through twelve smoke cycles.
+Current version: **v1.0.0** (see [CHANGELOG.md](CHANGELOG.md) and [module.json](module.json)). The runtime in [modules/](modules/), the hand-edited `_source/` JSON, the compendium packs in `packs/`, the build/validate scripts in [scripts/](scripts/), the [test suite](tests/), and the [release workflow](.github/workflows/release.yml) are all wired and have been through twelve smoke cycles.
 
 ## Quick commands
 
@@ -62,6 +62,7 @@ What `_source/` is **not**:
 | Actor | Manifestation Strike damage types | `["bludgeoning"]` placeholder (final type set by `cast-flow.js` at summon time) | validator |
 | Actor | `flags.ActiveAuras` + world flags | absent | validator |
 | Actor | `_key` (recursive) | computed `!actors[.items[.effects]]!…` | validator |
+| Actor | `img` + `prototypeToken.texture.src` | `modules/manifest-tulpa/assets/tulpa.jpg` | tests/spell-source.test.mjs (v1.0.0 actor-art lock) |
 | Spell | `_id` | `manifesttulpaS01` | tests/spell-source.test.mjs |
 | Spell | `img` | `modules/manifest-tulpa/assets/manifest_tulpa_icon.webp` | tests/spell-source.test.mjs |
 | Spell | `system.identifier` | `"manifest-tulpa"` | tests/spell-source.test.mjs |
